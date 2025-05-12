@@ -1,0 +1,57 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+					xmlns:vms="using:Assi.Server.ViewModels"
+					xmlns:ms="using:Assi.Server.Models"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Add Resources Here -->
+	<!-- 卡片项样式 -->
+	<ControlTheme x:Key="CardItem" TargetType="ListBoxItem" x:DataType="vms:StudentCardInfo">
+		<!-- 基础布局 -->
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="Margin" Value="8"/>
+		<Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+		<!-- 卡片容器 -->
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Border Name="cardBorder" Width="160" Height="102" CornerRadius="5"
+						BorderThickness="1" BorderBrush="#ECEFF4" Background="Transparent">
+					<Grid Background="Transparent">
+						<!-- 主内容区域 -->
+						<!--<ContentPresenter Content="{TemplateBinding Content}"/>-->
+						<Grid>
+							<!-- 绑定到 VM 的 ThumbnailImage 属性 -->
+							<Image Source="{Binding ThumbnailImage}"
+								   Stretch="UniformToFill" />
+							<!-- Stretch 属性控制图像如何填充区域 -->
+						</Grid>
+						<!-- 左侧序号标识 -->
+						<Canvas Width="15" Height="15" VerticalAlignment="Top" HorizontalAlignment="Left">
+							<!-- 背景路径 -->
+							<Path x:Name="sPath" Fill="Black" Data="M5,0 L15,0 C15,8.28427 8.28427,15 0,15 L0,15 L0,5 C0,2.23858 2.23858,0 5,0 Z" />
+						</Canvas>
+						<Border Width="12" Height="12" CornerRadius="12" Background="Transparent"
+								VerticalAlignment="Top" HorizontalAlignment="Left">
+							<!-- 假设序号也来自 VM -->
+							<TextBlock FontSize="8" Text="{Binding ItemIndex}" Foreground="White"
+									   VerticalAlignment="Center" HorizontalAlignment="Center"/>
+						</Border>
+						<!-- 右侧菜单按钮 -->
+						<Button Width="24" Height="24" Background="Transparent"
+								VerticalAlignment="Top" HorizontalAlignment="Right"
+								Cursor="Hand">
+							<Canvas Width="18" Height="18">
+								<!-- 三个垂直圆点 -->
+								<Ellipse Canvas.Left="7" Canvas.Top="3" Width="4" Height="4" Fill="#C4C4C4"/>
+								<Ellipse Canvas.Left="7" Canvas.Top="9" Width="4" Height="4" Fill="#C4C4C4"/>
+								<Ellipse Canvas.Left="7" Canvas.Top="15" Width="4" Height="4" Fill="#C4C4C4"/>
+							</Canvas>
+						</Button>
+					</Grid>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+		<Style Selector="^:selected /template/ Path#sPath">
+			<!-- 使用属性链精准定位到 Path 元素 -->
+			<Setter Property="Fill" Value="#1025C5" />
+		</Style>
+	</ControlTheme>
+</ResourceDictionary>

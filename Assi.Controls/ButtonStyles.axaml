@@ -1,0 +1,86 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Design.PreviewWith>
+    <Border Padding="20">
+      <!-- Add Controls for Previewer Here -->
+    </Border>
+  </Design.PreviewWith>
+  <!-- Add Styles Here -->
+	<Style Selector="Button.h1">
+		<Setter Property="FocusAdorner" Value="{x:Null}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="Foreground" Value="#6673D6"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="Background" Value="#E8EAF7"/>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Border Name="border"
+						Background="{TemplateBinding Background}"
+						BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}"
+						CornerRadius="5">
+					<ContentPresenter Name="contentPresenter"
+									  Content="{TemplateBinding Content}"
+									  ContentTemplate="{TemplateBinding ContentTemplate}"
+									  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+									  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+									  Margin="{TemplateBinding Padding}"/>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+		<Style Selector="^:pressed">
+			<Setter Property="BorderThickness" Value="4"/>
+			<Setter Property="BorderBrush" Value="Transparent"/>
+		</Style>
+	</Style>
+	<!-- 状态样式 -->
+	<!--<Style Selector="Button:pointerover">
+		<Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightAltBaseHighBrush}"/>
+	</Style>-->
+
+	<Style Selector="RadioButton.leftL1">
+		<Setter Property="FocusAdorner" Value="{x:Null}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="Foreground" Value="#000000"/>
+		<Setter Property="FontSize" Value="18"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="Background">
+			<Setter.Value>
+				<SolidColorBrush Color="#FFFFFF" Opacity="0.5"/>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Border Name="border"
+						Background="{TemplateBinding Background}"
+						BorderBrush="{TemplateBinding BorderBrush}"
+						BorderThickness="{TemplateBinding BorderThickness}"
+						CornerRadius="5"
+						BoxShadow="1 1 4 1 #0F000000"
+						Margin="4">
+					<ContentPresenter Name="contentPresenter"
+									  Content="{TemplateBinding Content}"
+									  ContentTemplate="{TemplateBinding ContentTemplate}"
+									  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+									  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+									  Margin="{TemplateBinding Padding}"/>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+	</Style>
+
+	<Style Selector="RadioButton.leftL1:checked">
+		<Setter Property="Background" Value="White"/>
+		<Setter Property="BorderThickness" Value="3"/>
+		<Setter Property="BorderBrush" Value="#1961F3"/>
+		<Setter Property="Foreground" Value="#1961F3"/>
+	</Style>
+</Styles>

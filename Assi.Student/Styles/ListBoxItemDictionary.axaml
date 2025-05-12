@@ -1,0 +1,84 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+					xmlns:vms="using:Assi.Student.ViewModels"
+					xmlns:ms="using:Assi.Student.Models"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Add Resources Here -->
+
+	<!-- 卡片项样式 -->
+	<ControlTheme x:Key="StudentItem" TargetType="ListBoxItem" x:DataType="ms:StudentCardInfo">
+		<!-- 基础布局 -->
+		<Setter Property="FocusAdorner" Value="{x:Null}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="Foreground" Value="#000000"/>
+		<Setter Property="FontSize" Value="18"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="Width" Value="160"/>
+		<Setter Property="Height" Value="45"/>
+		<Setter Property="Background">
+			<Setter.Value>
+				<SolidColorBrush Color="#FFFFFF" Opacity="0.5"/>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Border Name="cardBorder" Width="160" Height="40" CornerRadius="5"
+						BorderThickness="1" BorderBrush="#ECEFF4" Background="{TemplateBinding Background}">
+					<Grid Background="Transparent">
+						<Image Source="{Binding ThumbnailImage}" Height="25" Width="25"
+							   VerticalAlignment="Center" HorizontalAlignment="Left" Margin="15 0 0 0"/>
+						<TextBlock FontSize="16" Text="{Binding Name}" Foreground="Black" FontWeight="Bold"
+								   VerticalAlignment="Center" HorizontalAlignment="Left" Margin="55 0 0 0"/>
+					</Grid>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+		<Style Selector="^:selected">
+			<Setter Property="Background" Value="White"/>
+			<Setter Property="BorderThickness" Value="3"/>
+			<Setter Property="BorderBrush" Value="#1961F3"/>
+			<Setter Property="Foreground" Value="#1961F3"/>
+		</Style>
+	</ControlTheme>
+
+	<ControlTheme x:Key="ChatItem" TargetType="ListBoxItem" x:DataType="ms:StudentCardInfo">
+		<!-- 基础布局 -->
+		<Setter Property="FocusAdorner" Value="{x:Null}"/>
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="Foreground" Value="#000000"/>
+		<Setter Property="FontSize" Value="18"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="Background">
+			<Setter.Value>
+				<SolidColorBrush Color="#FFFFFF" Opacity="0.5"/>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Border Name="cardBorder" CornerRadius="5"
+						BorderThickness="1" BorderBrush="#ECEFF4" Background="{TemplateBinding Background}">
+					<Grid Background="Transparent">
+						<Image Source="{Binding ThumbnailImage}" Height="25" Width="25"
+							   VerticalAlignment="Center" HorizontalAlignment="Left" Margin="15 0 0 0"/>
+						<TextBlock FontSize="16" Text="{Binding Name}" Foreground="Black" FontWeight="Bold"
+								   VerticalAlignment="Center" HorizontalAlignment="Left" Margin="55 0 0 0"/>
+					</Grid>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+		<Style Selector="^:selected">
+			<Setter Property="Background" Value="White"/>
+			<Setter Property="BorderThickness" Value="3"/>
+			<Setter Property="BorderBrush" Value="#1961F3"/>
+			<Setter Property="Foreground" Value="#1961F3"/>
+		</Style>
+	</ControlTheme>
+	
+</ResourceDictionary>

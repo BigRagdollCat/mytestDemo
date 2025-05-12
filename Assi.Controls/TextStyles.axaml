@@ -1,0 +1,25 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Design.PreviewWith>
+    <Border Padding="20">
+      <!-- Add Controls for Previewer Here -->
+    </Border>
+  </Design.PreviewWith>
+
+  <!-- Add Styles Here -->
+	<Style Selector="TextBox.T1">
+		<Setter Property="BorderBrush" Value="#ECEFF4"/>
+		<Setter Property="CornerRadius" Value="5"/>
+	</Style>
+	<!-- 鼠标悬停状态 -->
+	<Style Selector="TextBox.T1:pointerover">
+		<Setter Property="BorderBrush" Value="#88C0D0"/>
+		<!-- 悬停时的边框颜色 -->
+	</Style>
+
+	<!-- 输入时焦点状态 -->
+	<Style Selector="TextBox.T1:focus">
+		<Setter Property="BorderBrush" Value="#81A1C1"/>
+		<!-- 焦点时的边框颜色 -->
+	</Style>
+</Styles>

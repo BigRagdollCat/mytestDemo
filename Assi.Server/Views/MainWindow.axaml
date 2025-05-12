@@ -1,0 +1,133 @@
+		<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Assi.Server.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		mc:Ignorable="d" Width="1280" Height="800"
+        x:Class="Assi.Server.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="Assi" WindowStartupLocation="CenterScreen">
+	<Design.DataContext>
+		<!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+		<vm:MainWindowViewModel/>
+	</Design.DataContext>
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="186"/>
+			<ColumnDefinition Width="*"/>
+		</Grid.ColumnDefinitions>
+		<Grid>
+			<Grid.Background>
+				<ImageBrush Stretch="UniformToFill" Source="avares://Assi.Server/Resources/leftBack.png"/>
+			</Grid.Background>
+			<StackPanel Margin="0 105 0 0" Orientation="Vertical" HorizontalAlignment="Center" >
+				<RadioButton Width="170" Height="48" Classes="leftL1" GroupName="LPageList" IsChecked="True">
+					<StackPanel Width="160" Height="38" Orientation="Horizontal">
+						<Image Source="/Resources/HomeBtnIco.png" Height="24" Width="24" Margin="10 0 0 0"/>
+						<TextBlock Text="首  页" VerticalAlignment="Center" Margin="15 0 0 0"/>
+					</StackPanel>
+				</RadioButton>
+
+				<RadioButton Margin="0 10 0 0" Width="170" Height="48" Classes="leftL1" GroupName="LPageList"
+								 IsVisible="True">
+					<StackPanel Width="160" Height="38" Orientation="Horizontal">
+						<TextBlock Text="授  课" VerticalAlignment="Center" Margin="15 0 0 0"/>
+					</StackPanel>
+				</RadioButton>
+			</StackPanel>
+		</Grid>
+		<Grid Grid.Column="1" Background="#f5f9fd">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="40"/>
+				<RowDefinition Height="55"/>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="35"/>
+			</Grid.RowDefinitions>
+			<StackPanel Background="Transparent" Height="40" Orientation="Horizontal">
+				<Image Source="avares://Assi.Server/Resources/Vector.png" Height="20" Width="20"
+					   VerticalAlignment="Center" Margin="20 0 0 0"/>
+				<TextBlock Text="艾思网教综合管控平台" FontSize="18" FontWeight="Bold"
+						   VerticalAlignment="Center" Margin="20 0 0 0"/>
+			</StackPanel>
+			<Border Grid.Row="1" CornerRadius="3" Margin="12 0 12 0" Height="38" VerticalAlignment="Center"
+				BorderBrush="#ECEFF4" BorderThickness="1" Background="#F7F8FB">
+				<StackPanel Orientation="Horizontal">
+					<TextBlock Text="首页" FontSize="12" Foreground="#0A0A0A" VerticalAlignment="Center"
+							   Margin="30 0 0 0"/>
+					<Button Margin="30 0 0 0" Height="36" Width="87" Classes="h1"
+							Content="教师广播" Command="{Binding TeacherDemonstrationCommand}"/>
+					<Button Margin="2 0 0 0" Height="36" Width="87" Classes="h1"
+							Content="学生演示" Command="{Binding StudentDemonstrationCommand}"/>
+					<Button Margin="2 0 0 0" Height="36" Width="87" Classes="h1"
+							Content="黑屏管控" Command="{Binding RemoteScreenBlackoutCommand}"/>
+					<Button Margin="2 0 0 0" Height="36" Width="87" Classes="h1"
+							Content="下发资料"  Command="{Binding DistributeCommand}"/>
+					<Button Margin="2 0 0 0" Height="36" Width="87" Classes="h1"
+							Content="结束收取" Command="{Binding ReceiveFilesCommand}"/>
+					<Button Margin="2 0 0 0" Height="36" Width="87" Classes="h1"
+							Content="远程命令" Command="{Binding RemoteCommand}"/>
+					<Button Margin="2 0 0 0" Height="36" Width="87" Classes="h1"
+							Content="下  课" Command="{Binding ClassOverCommand}"/>
+					<Button Margin="2 0 0 0" Height="36" Width="87" Classes="h1"
+							Content="备份还原" Command="{Binding RestoreFromBackupCommand}"/>
+				</StackPanel>
+			</Border>
+			<Border CornerRadius="5" Grid.Row="2" Background="White" Margin="12 0 12 0">
+				<Grid>
+					<Grid Margin="25 18 20 0" VerticalAlignment="Top">
+						<StackPanel Orientation="Horizontal"  VerticalAlignment="Center">
+							<TextBlock Text="全部" FontWeight="Bold" FontSize="13" Foreground="#1025C5"/>
+							<TextBlock Text="(" FontWeight="Bold" FontSize="13" Foreground="#1025C5"/>
+							<TextBlock Text="61" FontWeight="Bold" FontSize="13" Foreground="#1025C5"/>
+							<TextBlock Text=")" FontWeight="Bold" FontSize="13" Foreground="#1025C5"/>
+						</StackPanel>
+						<StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+							<TextBox Classes="T1" Width="120">
+
+							</TextBox>
+							<Button Height="30" Width="30" Margin="15 0 0 0" Classes="h1" Background="#2F41CB">
+								<Image Source="avares://Assi.Server/Resources/searchMin.png" Width="15" Height="15"/>
+							</Button>
+							<Button Height="30" Width="30" Margin="15 0 0 0" Classes="h1" Background="#ECEFF4">
+								<Image Source="avares://Assi.Server/Resources/refreshMin.png" Width="18" Height="18"/>
+							</Button>
+							<Button Height="30" Width="70" Margin="15 0 0 0" Classes="h1" Background="#ECEFF4" IsVisible="False">
+
+							</Button>
+						</StackPanel>
+					</Grid>
+					<Border Height="2" Background="#EEF1F6" VerticalAlignment="Top" Margin="25 60 20 0" CornerRadius="1"/>
+					<Border Width="26" Height="4" Background="#A6A6A6" CornerRadius="2"
+							HorizontalAlignment="Left" VerticalAlignment="Top" Margin="25 59 20 0"/>
+
+					<ListBox Margin="23 78 20 20" Background="Transparent" ItemContainerTheme="{StaticResource CardItem}"
+							 ItemsSource="{Binding StudentCardInfos}">
+						<ListBox.ItemsPanel>
+							<ItemsPanelTemplate>
+								<WrapPanel/>
+							</ItemsPanelTemplate>
+						</ListBox.ItemsPanel>
+					</ListBox>
+				</Grid>
+			</Border>
+
+			<StackPanel Grid.Row="3" Margin="0 0 10 0"
+						HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal">
+				<TextBlock Text="RAM" FontSize="12" Foreground="#828282" Margin="0 0 5 0"/>
+				<Border Height="8" Width="50" CornerRadius="4" Background="#CCCCCC" Margin="0 0 5 0">
+					<Border VerticalAlignment="Center" HorizontalAlignment="Left"
+							Height="8" Width="{Binding RamNum}" Background="#575757" CornerRadius="4"/>
+				</Border>
+				<TextBlock Text="CPU" FontSize="12" Foreground="#828282"
+						   Margin="0 0 5 0"/>
+				<Border Height="8" Width="50" CornerRadius="4" Background="#CCCCCC" Margin="0 0 5 0">
+					<Border VerticalAlignment="Center" HorizontalAlignment="Left"
+							Height="8" Width="{Binding CpuNum}" Background="#575757" CornerRadius="4"/>
+				</Border>
+			</StackPanel>
+		</Grid>
+	</Grid>
+</Window>
+
