@@ -16,6 +16,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
 using Assi.Services;
+using Assi.Student.Services;
 
 namespace Assi.Student
 {
@@ -56,6 +57,7 @@ namespace Assi.Student
                     var port = 8089; // 手动传入端口号
                     return new EnhancedChatServer(port, Environment.ProcessorCount);
                 });
+                services.AddSingleton<ChatService>();
                 // 注册其他服务...
                 services.AddHostedService<ChatUdpBackgroundService>();
                 return services.BuildServiceProvider();
@@ -88,7 +90,8 @@ namespace Assi.Student
 
                 Task.Run(() =>
                 {
-                    var backgroundService = Services.GetRequiredService<IHostedService>();
+                    ChatUdpBackgroundService backgroundService = (ChatUdpBackgroundService)Services.GetRequiredService<IHostedService>();
+                    backgroundService.OnChatInfo += Services.GetRequiredService<ChatService>().ChatRun;
                     // 获取并启动 HostedService
                     backgroundService.StartAsync(CancellationToken.None);
 

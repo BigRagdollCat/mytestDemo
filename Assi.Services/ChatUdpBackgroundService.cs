@@ -19,12 +19,6 @@ namespace Assi.Services
         public ChatUdpBackgroundService(EnhancedChatServer enhancedChatServer)
         {
             _enhancedChatServer = enhancedChatServer;
-            OnChatInfo += ChatRun;
-        }
-
-        public void ChatRun(ChatInfoModel cinfo) 
-        {
-
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
