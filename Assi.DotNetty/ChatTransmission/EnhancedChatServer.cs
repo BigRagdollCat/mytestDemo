@@ -55,19 +55,22 @@ namespace Assi.DotNetty.ChatTransmission
         /// <param name="targetPort">目标端口号。</param>
         /// <param name="message">要发送的消息。</param>
         /// <returns>是否成功发送消息。</returns>
-        public async Task<bool> SendMessageAsync(string targetIp, int targetPort, string message)
+        public async Task<bool> SendMessageAsync(string targetIp, int targetPort, ChatInfoModel message)
         {
             if (_channel == null || !_channel.Active)
             {
-                _channel = await _bootstrap.BindAsync(_port); // 绑定到任意可用端口
+                _channel = await _bootstrap.BindAsync(_port);
             }
-
-            var byteBuffer = Unpooled.CopiedBuffer(message, Encoding.UTF8);
-            var remoteEndpoint = new IPEndPoint(IPAddress.Parse(targetIp), targetPort);
-            var datagramPacket = new DatagramPacket(byteBuffer, remoteEndpoint);
 
             try
             {
+                // 序列化消息
+                var serialized = ChatSerializer.Serialize(message);
+                var byteBuffer = Unpooled.CopiedBuffer(serialized);
+
+                var remoteEndpoint = new IPEndPoint(IPAddress.Parse(targetIp), targetPort);
+                var datagramPacket = new DatagramPacket(byteBuffer, remoteEndpoint);
+
                 await _channel.WriteAndFlushAsync(datagramPacket);
                 return true;
             }

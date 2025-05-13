@@ -12,6 +12,9 @@ using System;
 using System.Linq;
 using Assi.Server.Services;
 using Assi.DotNetty.FileTransmission;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
+using System.Threading;
 
 namespace Assi.Server
 {
@@ -51,6 +54,8 @@ namespace Assi.Server
                     var port = 9099; // 手动传入端口号
                     return new EnhancedFileServer(port, Environment.ProcessorCount);
                 });
+                services.AddSingleton<ChatService>();
+                services.AddSingleton<EnhancedFileClient>();
                 // 注册其他服务...
                 services.AddHostedService<WorkBackgroundService>();
                 return services.BuildServiceProvider();
@@ -65,8 +70,26 @@ namespace Assi.Server
 
         public override void OnFrameworkInitializationCompleted()
         {
+
+
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
+                #region 启动HostService
+                Task.Run(() =>
+                {
+                    WorkBackgroundService backgroundService = (WorkBackgroundService)Services.GetRequiredService<IHostedService>();
+                    backgroundService.OnChatInfo += Services.GetRequiredService<ChatService>().ChatRun;
+                    // 获取并启动 HostedService
+                    backgroundService.StartAsync(CancellationToken.None);
+
+                    // 注册关闭时的清理逻辑
+                    desktop.Exit += async (sender, args) =>
+                    {
+                        await backgroundService.StopAsync(CancellationToken.None);
+                    };
+                });
+                #endregion
+
                 // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
                 // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
                 DisableAvaloniaDataAnnotationValidation();

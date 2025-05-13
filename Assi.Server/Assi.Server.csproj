@@ -23,6 +23,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AvaloniaResource Include="Resources\assiLogo.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </AvaloniaResource>
     <AvaloniaResource Include="Resources\foldUp.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </AvaloniaResource>
@@ -30,6 +33,9 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </AvaloniaResource>
     <AvaloniaResource Include="Resources\leftBack.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </AvaloniaResource>
+    <AvaloniaResource Include="Resources\NotiyNull.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </AvaloniaResource>
     <AvaloniaResource Include="Resources\refreshMin.png">
