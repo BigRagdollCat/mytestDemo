@@ -10,6 +10,8 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
+using Assi.Server.Services;
+using Assi.DotNetty.FileTransmission;
 
 namespace Assi.Server
 {
@@ -44,8 +46,13 @@ namespace Assi.Server
                     var port = 8099; // 手动传入端口号
                     return new EnhancedChatServer(port, Environment.ProcessorCount);
                 });
+                services.AddSingleton<EnhancedFileServer>(sp =>
+                {
+                    var port = 9099; // 手动传入端口号
+                    return new EnhancedFileServer(port, Environment.ProcessorCount);
+                });
                 // 注册其他服务...
-                services.AddHostedService<ChatUdpBackgroundService>();
+                services.AddHostedService<WorkBackgroundService>();
                 return services.BuildServiceProvider();
             }
             catch (Exception ex)

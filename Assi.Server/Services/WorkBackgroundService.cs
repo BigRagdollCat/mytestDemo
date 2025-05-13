@@ -8,17 +8,25 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Assi.Services
+namespace Assi.Server.Services
 {
-    public class ChatUdpBackgroundService : BackgroundService
+    public class WorkBackgroundService : BackgroundService
     {
         private readonly EnhancedChatServer _enhancedChatServer;
+        private readonly EnhancedFileServer _enhancedFileServer;
 
         public Action<ChatInfoModel> OnChatInfo { get; set; }
 
-        public ChatUdpBackgroundService(EnhancedChatServer enhancedChatServer)
+        public WorkBackgroundService(EnhancedChatServer enhancedChatServer, EnhancedFileServer enhancedFileServer)
         {
             _enhancedChatServer = enhancedChatServer;
+            _enhancedFileServer = enhancedFileServer;
+            OnChatInfo += CanRun;
+        }
+
+        public void CanRun(ChatInfoModel chatInfo)
+        {
+
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -38,3 +46,4 @@ namespace Assi.Services
         }
     }
 }
+

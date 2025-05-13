@@ -4,5 +4,6 @@ namespace Assi.Server.ViewModels
 {
     public class ViewModelBase : ObservableObject
     {
+        
     }
 }

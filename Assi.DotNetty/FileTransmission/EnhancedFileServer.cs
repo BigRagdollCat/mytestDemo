@@ -14,23 +14,24 @@ namespace Assi.DotNetty.FileTransmission
 {
     public class EnhancedFileServer
     {
-        private IChannel? channelFuture;
-        private int _port;
+        private readonly Bootstrap _bootstrap;
+        private IChannel? _channel = null;
+        private readonly MultithreadEventLoopGroup _group;
+        private readonly int _port;
 
-        public EnhancedFileServer(int port) 
+        public EnhancedFileServer(int port, int threadCount)
         {
-            this._port = port;
+            _port = port;
+            _group = new MultithreadEventLoopGroup(threadCount);
+            _bootstrap = new Bootstrap();
         }
         public async Task Start()
         {
-            var bossGroup = new MultithreadEventLoopGroup(1);
-            var workerGroup = new MultithreadEventLoopGroup(Environment.ProcessorCount * 2); // 增加线程数
-
             try
             {
                 var bootstrap = new ServerBootstrap();
                 bootstrap
-                    .Group(bossGroup, workerGroup)
+                    .Group(_group)
                     .Channel<TcpServerSocketChannel>()
                     .Option(ChannelOption.SoBacklog, 100)
                     .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
@@ -41,7 +42,7 @@ namespace Assi.DotNetty.FileTransmission
                         pipeline.AddLast(new EnhancedFileServerHandler());
                     }));
 
-                channelFuture = await bootstrap.BindAsync(_port);
+                _channel = await bootstrap.BindAsync(_port);
 
             }
             finally
@@ -50,9 +51,9 @@ namespace Assi.DotNetty.FileTransmission
         }
         public async Task Stop()
         {
-            if (channelFuture != null && channelFuture.Active)
+            if (_channel != null && _channel.Active)
             {
-                await channelFuture.CloseAsync();
+                await _channel.CloseAsync();
             }
         }
     }

@@ -59,7 +59,7 @@ namespace Assi.Student
                 });
                 services.AddSingleton<ChatService>();
                 // 注册其他服务...
-                services.AddHostedService<ChatUdpBackgroundService>();
+                services.AddHostedService<WorkBackgroundService>();
                 return services.BuildServiceProvider();
             }
             catch (Exception ex)
@@ -90,7 +90,7 @@ namespace Assi.Student
 
                 Task.Run(() =>
                 {
-                    ChatUdpBackgroundService backgroundService = (ChatUdpBackgroundService)Services.GetRequiredService<IHostedService>();
+                    WorkBackgroundService backgroundService = (WorkBackgroundService)Services.GetRequiredService<IHostedService>();
                     backgroundService.OnChatInfo += Services.GetRequiredService<ChatService>().ChatRun;
                     // 获取并启动 HostedService
                     backgroundService.StartAsync(CancellationToken.None);
