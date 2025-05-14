@@ -1,6 +1,9 @@
-﻿using Avalonia.Collections;
+﻿using Assi.DotNetty.ChatTransmission;
+using Avalonia.Collections;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Windows.Input;
 
 namespace Assi.Server.ViewModels
@@ -80,9 +83,14 @@ namespace Assi.Server.ViewModels
 
         #region 黑屏管控
         public ICommand RemoteScreenBlackoutCommand { get; }
-        private void RemoteScreenBlackout()
+        private async void RemoteScreenBlackout()
         {
-
+            await App.Current.Services.GetService<EnhancedChatServer>().SendMessageAsync("", 0, new ChatInfoModel()
+            {
+                MsgType = MsgType.System,
+                Message = "_close_desktop",
+                SendTimeSpan = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+            });
         }
         #endregion
 

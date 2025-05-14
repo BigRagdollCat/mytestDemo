@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DotNetty.Buffers;
 using System.Net;
+using Newtonsoft.Json;
 
 namespace Assi.DotNetty.ChatTransmission
 {
@@ -34,6 +35,7 @@ namespace Assi.DotNetty.ChatTransmission
                 .Group(_group)
                 .Channel<SocketDatagramChannel>()
                 .Option(ChannelOption.SoBroadcast, true)
+                .Option(ChannelOption.SoReuseaddr, true)
                 .Handler(new ActionChannelInitializer<IChannel>(channel =>
                 {
                     channel.Pipeline.AddLast(new EnhancedChatServerHandler(_chatWork));
@@ -47,7 +49,6 @@ namespace Assi.DotNetty.ChatTransmission
             }
 
         }
-
         /// <summary>
         /// 向指定的目标地址发送消息。
         /// </summary>
@@ -59,18 +60,17 @@ namespace Assi.DotNetty.ChatTransmission
         {
             if (_channel == null || !_channel.Active)
             {
-                _channel = await _bootstrap.BindAsync(_port);
+                _channel = await _bootstrap.BindAsync(_port); // 绑定到任意可用端口
             }
+
+            string msg = JsonConvert.SerializeObject(message);
+            var byteBuffer = Unpooled.CopiedBuffer(msg, Encoding.UTF8);
+
+            var remoteEndpoint = new IPEndPoint(IPAddress.Parse(targetIp), targetPort);
+            var datagramPacket = new DatagramPacket(byteBuffer, remoteEndpoint);
 
             try
             {
-                // 序列化消息
-                var serialized = ChatSerializer.Serialize(message);
-                var byteBuffer = Unpooled.CopiedBuffer(serialized);
-
-                var remoteEndpoint = new IPEndPoint(IPAddress.Parse(targetIp), targetPort);
-                var datagramPacket = new DatagramPacket(byteBuffer, remoteEndpoint);
-
                 await _channel.WriteAndFlushAsync(datagramPacket);
                 return true;
             }
