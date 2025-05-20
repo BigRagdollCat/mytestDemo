@@ -53,7 +53,7 @@ namespace Assi.Student.Models
         #region 发送消息
         public async void Send(string message)
         {
-            await App.Current.Services.GetService<EnhancedChatServer>().SendMessageAsync(Ip,Port,message);
+
         }
         #endregion
     }

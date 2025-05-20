@@ -5,7 +5,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -79,6 +82,53 @@ namespace Assi.Services
                 Console.WriteLine($"An error occurred while downloading image '{url}' : {ex.Message}");
                 return null;
             }
+        }
+
+        public static IPAddress GetLocalIp()
+        {
+            var nics = NetworkInterface.GetAllNetworkInterfaces();
+            IPAddress? broadcastAddress = null;
+            foreach (var adapter in nics)
+            {
+                // 只选择已启用且为以太网/无线/Wi-Fi的适配器
+                if (adapter.OperationalStatus == OperationalStatus.Up &&
+                    (adapter.NetworkInterfaceType == NetworkInterfaceType.Ethernet ||
+                     adapter.NetworkInterfaceType == NetworkInterfaceType.Wireless80211))
+                {
+                    var properties = adapter.GetIPProperties();
+                    foreach (var address in properties.UnicastAddresses)
+                    {
+                        if (address.Address.AddressFamily == AddressFamily.InterNetwork)
+                        {
+                            // 获取IP地址和子网掩码
+                            IPAddress ip = address.Address;
+                            IPAddress subnetMask = address.IPv4Mask;
+
+                            // 计算广播地址
+                            broadcastAddress = CalculateBroadcastAddress(ip, subnetMask);
+                            break;
+                        }
+                    }
+                }
+            }
+            return broadcastAddress;
+        }
+
+        /// <summary>
+        /// 根据IP和子网掩码计算广播地址
+        /// </summary>
+        public static IPAddress CalculateBroadcastAddress(IPAddress ip, IPAddress subnetMask)
+        {
+            byte[] ipBytes = ip.GetAddressBytes();
+            byte[] maskBytes = subnetMask.GetAddressBytes();
+            byte[] broadcastBytes = new byte[ipBytes.Length];
+
+            for (int i = 0; i < broadcastBytes.Length; i++)
+            {
+                broadcastBytes[i] = (byte)(ipBytes[i] | ~maskBytes[i]);
+            }
+
+            return new IPAddress(broadcastBytes);
         }
     }
 }

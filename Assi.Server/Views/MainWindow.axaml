@@ -74,7 +74,7 @@
 							Content="备份还原" Command="{Binding RestoreFromBackupCommand}"/>
 				</StackPanel>
 			</Border>
-			<Border CornerRadius="5" Grid.Row="2" Background="White" Margin="12 0 12 0">
+			<Border Name="zBord" CornerRadius="5" Grid.Row="2" Background="White" Margin="12 0 12 0">
 				<Grid>
 					<Grid Margin="25 18 20 0" VerticalAlignment="Top">
 						<StackPanel Orientation="Horizontal"  VerticalAlignment="Center">
@@ -83,7 +83,7 @@
 							<TextBlock Text="61" FontWeight="Bold" FontSize="13" Foreground="#1025C5"/>
 							<TextBlock Text=")" FontWeight="Bold" FontSize="13" Foreground="#1025C5"/>
 						</StackPanel>
-						<StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+						<StackPanel HorizontalAlignment="Right" Orientation="Horizontal" >
 							<TextBox Classes="T1" Width="120">
 
 							</TextBox>
@@ -96,21 +96,43 @@
 							<Button Height="30" Width="70" Margin="15 0 0 0" Classes="h1" Background="#ECEFF4" IsVisible="False">
 
 							</Button>
+							<Button Classes="h1" Width="120" Height="30" Margin="15 0 0 0" PointerEntered="StackPanel_PointerEntered"/>
 						</StackPanel>
 					</Grid>
 					<Border Height="2" Background="#EEF1F6" VerticalAlignment="Top" Margin="25 60 20 0" CornerRadius="1"/>
 					<Border Width="26" Height="4" Background="#A6A6A6" CornerRadius="2"
 							HorizontalAlignment="Left" VerticalAlignment="Top" Margin="25 59 20 0"/>
 
-					<ListBox Margin="23 78 20 20" Background="Transparent" ItemContainerTheme="{StaticResource CardItem}"
-							 ItemsSource="{Binding StudentCardInfos}">
+					<ListBox Name="ItemList" Margin="23 78 20 20" Background="Transparent" ItemContainerTheme="{StaticResource CardItem}"
+							 ItemsSource="{Binding DisplayStudentCardInfos}" SelectionMode="Multiple"
+							 SelectionChanged="ListBox_SelectionChanged">
 						<ListBox.ItemsPanel>
 							<ItemsPanelTemplate>
 								<WrapPanel/>
 							</ItemsPanelTemplate>
 						</ListBox.ItemsPanel>
 					</ListBox>
+					
+					<Button Name="AddGroupBtn" Classes="h1" Content="添加群组"
+							Command="{Binding CreateGroupCommand}"
+							CommandParameter="{Binding SelectedItems, ElementName=ItemList}"
+						    Width="75" Height="35" IsVisible="False"
+							Margin="10" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
 				</Grid>
+			</Border>
+			<Border Name="GroupBor" Width="0" Grid.Row="2" Margin="0 0 0 0" HorizontalAlignment="Right"
+					Background="White" BorderThickness="1" BorderBrush="#FFDDDDDD"
+					PointerExited="Button_PointerExited_1">
+				<Border.Transitions>
+					<Transitions>
+						<DoubleTransition Property="Width" Duration="0:0:0.2"/>
+					</Transitions>
+				</Border.Transitions>
+				
+				<ListBox SelectionMode="Single" Background="Transparent" ItemContainerTheme="{StaticResource GropuItem}"
+						 ItemsSource="{Binding GroupInfos}"
+						 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+				</ListBox>
 			</Border>
 
 			<StackPanel Grid.Row="3" Margin="0 0 10 0"

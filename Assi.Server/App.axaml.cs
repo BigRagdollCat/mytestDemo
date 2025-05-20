@@ -58,6 +58,7 @@ namespace Assi.Server
                 services.AddSingleton<EnhancedFileClient>();
                 // 注册其他服务...
                 services.AddHostedService<WorkBackgroundService>();
+                services.AddSingleton<IMainWindowService,MainWindowService>();
                 return services.BuildServiceProvider();
             }
             catch (Exception ex)
@@ -70,7 +71,12 @@ namespace Assi.Server
 
         public override void OnFrameworkInitializationCompleted()
         {
-
+            var mainWindows = new MainWindow
+            {
+                DataContext = new MainWindowViewModel(),
+            };
+            var windowService = Services.GetRequiredService<IMainWindowService>() as MainWindowService;
+            windowService?.Initialize(mainWindows);
 
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
@@ -93,10 +99,8 @@ namespace Assi.Server
                 // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
                 // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
                 DisableAvaloniaDataAnnotationValidation();
-                desktop.MainWindow = new MainWindow
-                {
-                    DataContext = new MainWindowViewModel(),
-                };
+                
+                desktop.MainWindow = mainWindows;
             }
 
             base.OnFrameworkInitializationCompleted();

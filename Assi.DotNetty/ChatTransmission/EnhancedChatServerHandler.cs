@@ -57,13 +57,12 @@ namespace Assi.DotNetty.ChatTransmission
             catch (Exception ex)
             {
                 // 记录消息解析错误
-                Console.WriteLine($"消息解析失败: {ex.Message}");
+                throw;
             }
         }
 
         public override void ExceptionCaught(IChannelHandlerContext ctx, Exception exception)
         {
-            Console.WriteLine($"通信异常: {exception.Message}");
             ctx.CloseAsync();
         }
 

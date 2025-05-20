@@ -54,4 +54,44 @@
 			<Setter Property="Fill" Value="#1025C5" />
 		</Style>
 	</ControlTheme>
+
+	<!-- 卡片项样式 -->
+	<ControlTheme x:Key="GropuItem" TargetType="ListBoxItem" x:DataType="ms:GroupInfo">
+		<!-- 基础布局 -->
+		<Setter Property="FocusAdorner" Value="{x:Null}"/>
+		<Setter Property="BorderThickness" Value="0 1 0 1"/>
+		<Setter Property="BorderBrush"  Value="#ECEFF4"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="Foreground" Value="Black"/>
+		<Setter Property="FontSize" Value="18"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="Height" Value="45"/>
+		<Setter Property="Margin" Value="0 5 0 0"/>
+		<Setter Property="Background">
+			<Setter.Value>
+				<SolidColorBrush Color="#FFFFFF" Opacity="0.5"/>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="HorizontalContentAlignment" Value="Center"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Cursor" Value="Hand"/>
+		<Setter Property="Template">
+			<ControlTemplate>
+				<Border Name="cardBorder" Height="40"
+						BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}"
+						Background="{TemplateBinding Background}">
+					<Grid Background="Transparent">
+						<TextBlock FontSize="16" Text="{Binding Name}" Foreground="{TemplateBinding Foreground}" FontWeight="Bold"
+								   VerticalAlignment="Center" HorizontalAlignment="Center"/>
+					</Grid>
+				</Border>
+			</ControlTemplate>
+		</Setter>
+		<Style Selector="^:selected">
+			<Setter Property="Background" Value="White"/>
+			<Setter Property="BorderThickness" Value="0 3 0 3"/>
+			<Setter Property="BorderBrush" Value="#1961F3"/>
+			<Setter Property="Foreground" Value="#1961F3"/>
+		</Style>
+	</ControlTheme>
 </ResourceDictionary>

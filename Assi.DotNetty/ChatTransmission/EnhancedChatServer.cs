@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using DotNetty.Buffers;
 using System.Net;
 using Newtonsoft.Json;
+using System.Net.Sockets;
 
 namespace Assi.DotNetty.ChatTransmission
 {
@@ -19,10 +20,12 @@ namespace Assi.DotNetty.ChatTransmission
         private IChannel? _channel = null;
         private readonly MultithreadEventLoopGroup _group;
         private readonly int _port;
+        private readonly int _broadcastPort;
 
-        public EnhancedChatServer(int port,int threadCount)
+        public EnhancedChatServer(int port, int broadcastPort, int threadCount = 1)
         {
             _port = port;
+            _broadcastPort = broadcastPort;
             _group = new MultithreadEventLoopGroup(threadCount);
             _bootstrap = new Bootstrap();
         }
@@ -44,7 +47,6 @@ namespace Assi.DotNetty.ChatTransmission
             }
             catch (Exception ex)
             {
-
                 throw;
             }
 
@@ -60,7 +62,7 @@ namespace Assi.DotNetty.ChatTransmission
         {
             if (_channel == null || !_channel.Active)
             {
-                _channel = await _bootstrap.BindAsync(_port); // 绑定到任意可用端口
+                throw new InvalidOperationException("Server is not running");
             }
 
             string msg = JsonConvert.SerializeObject(message);
@@ -78,6 +80,35 @@ namespace Assi.DotNetty.ChatTransmission
             {
                 Console.WriteLine($"Failed to send message: {ex.Message}");
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// 向局域网广播消息
+        /// </summary>
+        public async Task BroadcastAsync(ChatInfoModel message)
+        {
+            if (_channel == null || !_channel.Active)
+            {
+                throw new InvalidOperationException("Server is not running");
+            }
+
+            try
+            {
+                string msg = JsonConvert.SerializeObject(message);
+                var byteBuffer = Unpooled.CopiedBuffer(msg, Encoding.UTF8);
+
+                // 使用受限广播地址
+                var broadcastAddress = new IPEndPoint(IPAddress.Parse("255.255.255.255"), _broadcastPort);
+                var datagramPacket = new DatagramPacket(byteBuffer, broadcastAddress);
+
+                await _channel.WriteAndFlushAsync(datagramPacket);
+                Console.WriteLine($"Broadcast sent to {broadcastAddress}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Broadcast failed: {ex.Message}");
+                throw;
             }
         }
 

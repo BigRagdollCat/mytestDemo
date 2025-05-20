@@ -15,5 +15,12 @@ namespace Assi.Server.ViewModels
         private Bitmap? _thumbnailImage; // 属性名会自动生成为 ThumbnailImage
         [ObservableProperty]
         private int _itemIndex;
+        [ObservableProperty]
+        private string _ip;
+
+        public StudentCardInfo(string ip)
+        {
+            Ip = ip;
+        }
     }
 }
