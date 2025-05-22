@@ -9,20 +9,20 @@ using System.Threading.Tasks;
 
 namespace Assi.Server.Models
 {
-    public partial class GroupInfo : ModelBase
+    public partial class Group : ModelBase
     {
-        [ObservableProperty]
-        private int _index;
         [ObservableProperty]
         private string _name;
 
-        public List<StudentCardInfo> StudentCards { get; set; }
+        [ObservableProperty]
+        private bool _isCheck;
 
-        public GroupInfo(string name, int index = 0) 
+        public List<StudentCard> StudentCards { get; set; }
+
+        public Group(string name,List<StudentCard>? studentCards = null) 
         {
-            this.Index = index;
             this.Name = name;
-            StudentCards = new List<StudentCardInfo>(); 
+            StudentCards = studentCards == null ? new List<StudentCard>() : studentCards; 
         }
     }
 }

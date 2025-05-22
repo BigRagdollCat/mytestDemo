@@ -12,15 +12,41 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using Microsoft.Extensions.Hosting;
+using System.Linq;
+using SQLiteLibrary;
+using Microsoft.EntityFrameworkCore;
 
 namespace Assi.Server.ViewModels
 {
     public partial class MainWindowViewModel : ViewModelBase
     {
-        public AvaloniaList<StudentCardInfo> DisplayStudentCardInfos { get; }
-        public List<StudentCardInfo> StudentCardInfos { get; }
+        public AvaloniaList<StudentCard> DisplayStudentCards { get; }
+        public AvaloniaList<Group> Groups { get; set; }
 
-        public AvaloniaList<GroupInfo> GroupInfos { get; set; }
+        #region 分组选中项
+        private Group? _selectedGrop;
+        public Group? SelectedGrop
+        {
+            set
+            {
+                _selectedGrop = value;
+                OnPropertyChanged(nameof(SelectedGrop));
+                if (SelectedGrop != null) 
+                {
+                    DisplayStudentCards.Clear();
+                    foreach (var item in SelectedGrop?.StudentCards)
+                    {
+                        DisplayStudentCards.Add(item);
+                    }
+                }
+            }
+            get
+            {
+                return _selectedGrop;
+            }
+        }
+        #endregion
+
 
         public MainWindowViewModel()
         {
@@ -36,25 +62,32 @@ namespace Assi.Server.ViewModels
             CreateGroupCommand = new RelayCommand<object>(CreateGroup);
             #endregion
 
+            #region 读取数据库数据
+            Groups = new AvaloniaList<Group>();
 
-            StudentCardInfos = new List<StudentCardInfo>();
-
-            DisplayStudentCardInfos = new AvaloniaList<StudentCardInfo>()
+            using (SQLiteBase sql = new SQLiteBase())
             {
-                new StudentCardInfo(""){ ItemIndex = 1 },
-                new StudentCardInfo(""){ ItemIndex = 2 },
-                new StudentCardInfo(""){ ItemIndex = 3 },
-                new StudentCardInfo(""){ ItemIndex = 4 },
-                new StudentCardInfo(""){ ItemIndex = 5 },
-                new StudentCardInfo(""){ ItemIndex = 6 },
-                new StudentCardInfo(""){ ItemIndex = 7 },
-                new StudentCardInfo(""){ ItemIndex = 8 },
-                new StudentCardInfo(""){ ItemIndex = 9 },
-            };
-            GroupInfos = new AvaloniaList<GroupInfo>()
-            {
+                var group = sql.Groups.Select(grp => new Group(grp.Name,null)
+                {
+                    StudentCards = grp.Students.Select(std => new StudentCard(std.StudentIp)).ToList()
+                }).ToList();
 
-            };
+                foreach (var item in group)
+                {
+                    Groups.Add(item);
+                };
+                
+                var students = sql.StudentCards.Select(sdc => new StudentCard(sdc.Ip)).ToList();
+                for (int i = 0; i < students.Count; i++) 
+                {
+                    students[i].ItemIndex = i;
+                }
+
+                Groups.Insert(0, new Group("全部学生", students) { IsCheck = true });
+            }
+            #endregion
+            DisplayStudentCards = new AvaloniaList<StudentCard>();
+            SelectedGrop = Groups.FirstOrDefault();
         }
 
         /// <summary>
@@ -160,13 +193,16 @@ namespace Assi.Server.ViewModels
         {
             InputMsgWindow imw = new InputMsgWindow();
             await imw.ShowDialog(App.Current.Services.GetRequiredService<IMainWindowService>().getMainWindow());
-            AvaloniaList<object> alls = (AvaloniaList<object>)sCards;
-            GroupInfo groupInfo = new GroupInfo("", GroupInfos.Count);
-            foreach (var item in alls)
+            if (imw.result)
             {
-                groupInfo.StudentCards.Add((StudentCardInfo)item);
+                AvaloniaList<object> alls = (AvaloniaList<object>)sCards;
+                Group Group = new Group(imw.resultStr);
+                foreach (var item in alls)
+                {
+                    Group.StudentCards.Add((StudentCard)item);
+                }
+                Groups.Add(Group);
             }
-            GroupInfos.Add(groupInfo);
         }
         #endregion
     }

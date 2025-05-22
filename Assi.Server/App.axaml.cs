@@ -15,6 +15,8 @@ using Assi.DotNetty.FileTransmission;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using System.Threading;
+using SQLiteLibrary;
+using SQLitePCL;
 
 namespace Assi.Server
 {
@@ -30,6 +32,8 @@ namespace Assi.Server
         /// </summary>
         public IServiceProvider Services { get; private set; }
 
+        public SQLiteBase _sqlite { get; set; }
+
         public override void Initialize()
         {
             AvaloniaXamlLoader.Load(this);
@@ -37,6 +41,8 @@ namespace Assi.Server
         public override void RegisterServices()
         {
             base.RegisterServices();
+            _sqlite = new SQLiteBase();
+            _sqlite.Database.EnsureCreated();
             Services = ConfigureServices();
         }
         private static IServiceProvider ConfigureServices()

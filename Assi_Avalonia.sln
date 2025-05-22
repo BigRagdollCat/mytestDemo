@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assi.Student", "Assi.Studen
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assi.Services", "Assi.Services\Assi.Services.csproj", "{7C9C4ABF-8034-49AC-9D2F-2C2A19E4216E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SQLiteLibrary", "SQLiteLibrary\SQLiteLibrary.csproj", "{00C4D8F6-2751-4310-8B92-CE8F57811A84}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{7C9C4ABF-8034-49AC-9D2F-2C2A19E4216E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7C9C4ABF-8034-49AC-9D2F-2C2A19E4216E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7C9C4ABF-8034-49AC-9D2F-2C2A19E4216E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{00C4D8F6-2751-4310-8B92-CE8F57811A84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00C4D8F6-2751-4310-8B92-CE8F57811A84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00C4D8F6-2751-4310-8B92-CE8F57811A84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00C4D8F6-2751-4310-8B92-CE8F57811A84}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

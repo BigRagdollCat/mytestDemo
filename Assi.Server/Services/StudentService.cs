@@ -9,14 +9,14 @@ namespace Assi.Server.Services
 {
     public class StudentService
     {
-        public Dictionary<string,StudentCardInfo> StudentCards { get; set; }
+        public Dictionary<string,StudentCard> StudentCards { get; set; }
 
         public StudentService() 
         {
-            StudentCards = new Dictionary<string, StudentCardInfo>();
+            StudentCards = new Dictionary<string, StudentCard>();
         }
 
-        public void SetNewStudent(StudentCardInfo scInfo)
+        public void SetNewStudent(StudentCard scInfo)
         {
             StudentCards.Add(scInfo.Ip,scInfo);
         }

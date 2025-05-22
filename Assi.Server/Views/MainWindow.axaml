@@ -1,13 +1,14 @@
-		<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:Assi.Server.ViewModels"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+<Window xmlns="https://github.com/avaloniaui"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:vm="using:Assi.Server.ViewModels"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
 		mc:Ignorable="d" Width="1280" Height="800"
-        x:Class="Assi.Server.Views.MainWindow"
-        x:DataType="vm:MainWindowViewModel"
-        Icon="/Resources/assiLogo.png"
-        Title="Assi" WindowStartupLocation="CenterScreen">
+		x:Class="Assi.Server.Views.MainWindow"
+		x:DataType="vm:MainWindowViewModel"
+		Icon="/Resources/assiLogo.png"
+		Title="Assi" WindowStartupLocation="CenterScreen">
 	<Design.DataContext>
 		<!-- This only sets the DataContext for the previewer in an IDE,
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
@@ -96,7 +97,7 @@
 							<Button Height="30" Width="70" Margin="15 0 0 0" Classes="h1" Background="#ECEFF4" IsVisible="False">
 
 							</Button>
-							<Button Classes="h1" Width="120" Height="30" Margin="15 0 0 0" PointerEntered="StackPanel_PointerEntered"/>
+							<Button Classes="h1" Width="120" Height="30" Margin="15 0 0 0" Content="分组信息" PointerEntered="StackPanel_PointerEntered"/>
 						</StackPanel>
 					</Grid>
 					<Border Height="2" Background="#EEF1F6" VerticalAlignment="Top" Margin="25 60 20 0" CornerRadius="1"/>
@@ -104,7 +105,7 @@
 							HorizontalAlignment="Left" VerticalAlignment="Top" Margin="25 59 20 0"/>
 
 					<ListBox Name="ItemList" Margin="23 78 20 20" Background="Transparent" ItemContainerTheme="{StaticResource CardItem}"
-							 ItemsSource="{Binding DisplayStudentCardInfos}" SelectionMode="Multiple"
+							 ItemsSource="{Binding DisplayStudentCards}" SelectionMode="Multiple"
 							 SelectionChanged="ListBox_SelectionChanged">
 						<ListBox.ItemsPanel>
 							<ItemsPanelTemplate>
@@ -130,7 +131,7 @@
 				</Border.Transitions>
 				
 				<ListBox SelectionMode="Single" Background="Transparent" ItemContainerTheme="{StaticResource GropuItem}"
-						 ItemsSource="{Binding GroupInfos}"
+						 ItemsSource="{Binding Groups}" SelectedItem="{Binding Path=SelectedGrop,Mode=TwoWay}"
 						 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
 				</ListBox>
 			</Border>

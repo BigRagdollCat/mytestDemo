@@ -4,7 +4,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!-- Add Resources Here -->
 	<!-- 卡片项样式 -->
-	<ControlTheme x:Key="CardItem" TargetType="ListBoxItem" x:DataType="vms:StudentCardInfo">
+	<ControlTheme x:Key="CardItem" TargetType="ListBoxItem" x:DataType="vms:StudentCard">
 		<!-- 基础布局 -->
 		<Setter Property="Padding" Value="0"/>
 		<Setter Property="Margin" Value="8"/>
@@ -56,7 +56,7 @@
 	</ControlTheme>
 
 	<!-- 卡片项样式 -->
-	<ControlTheme x:Key="GropuItem" TargetType="ListBoxItem" x:DataType="ms:GroupInfo">
+	<ControlTheme x:Key="GropuItem" TargetType="ListBoxItem" x:DataType="ms:Group">
 		<!-- 基础布局 -->
 		<Setter Property="FocusAdorner" Value="{x:Null}"/>
 		<Setter Property="BorderThickness" Value="0 1 0 1"/>

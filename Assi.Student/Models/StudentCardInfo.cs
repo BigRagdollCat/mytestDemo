@@ -16,7 +16,7 @@ using Tmds.DBus.Protocol;
 
 namespace Assi.Student.Models
 {
-    public partial class StudentCardInfo : ModelBase
+    public partial class StudentCard : ModelBase
     {
         // 这个属性将暴露给 XAML 绑定
         [ObservableProperty]
@@ -32,7 +32,7 @@ namespace Assi.Student.Models
 
         public AvaloniaList<ChatInfo> ChatInfoList { get; set; }
 
-        public StudentCardInfo(string name,string ipStr, int port)
+        public StudentCard(string name,string ipStr, int port)
         {
             Name = name;
             Ip = ipStr;

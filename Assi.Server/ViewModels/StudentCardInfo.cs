@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Assi.Server.ViewModels
 {
-    public partial class StudentCardInfo : ViewModelBase
+    public partial class StudentCard : ViewModelBase
     {
         // 这个属性将暴露给 XAML 绑定
         [ObservableProperty]
@@ -18,7 +18,7 @@ namespace Assi.Server.ViewModels
         [ObservableProperty]
         private string _ip;
 
-        public StudentCardInfo(string ip)
+        public StudentCard(string ip)
         {
             Ip = ip;
         }
