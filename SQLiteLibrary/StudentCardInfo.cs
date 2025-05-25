@@ -12,6 +12,8 @@ namespace SQLiteLibrary
     public class StudentCardInfo
     {
         [Key]
+        [Column(name: "MAC")]
+        public string MAC { get; set; } 
         [Column(name:"Ip")]
         public string Ip { get; set; }
         [Column(name: "Index")]

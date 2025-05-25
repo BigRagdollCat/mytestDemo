@@ -111,9 +111,9 @@ namespace Assi.Student
                 //{
                 //    DataContext = new MainWindowViewModel(),
                 //};
-                desktop.MainWindow = new ChatViewWindow
+                desktop.MainWindow = new MainWindow
                 {
-                    DataContext = new ChatWindowViewModel()
+                    DataContext = new MainWindowViewModel()
                 };
             }
 

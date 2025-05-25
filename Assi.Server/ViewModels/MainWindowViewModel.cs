@@ -63,13 +63,19 @@ namespace Assi.Server.ViewModels
             #endregion
 
             #region 读取数据库数据
+            
             Groups = new AvaloniaList<Group>();
 
             using (SQLiteBase sql = new SQLiteBase())
             {
+                //for (int i = 0; i < 10; i++)
+                //{
+                //    sql.StudentCards.Add(new StudentCardInfo() { Ip = $"192.168.9.{100 + i}",MAC = $"ABCDEF{i}",Name = $"测试{i}",Index = i });
+                //}
+                //sql.SaveChanges();
                 var group = sql.Groups.Select(grp => new Group(grp.Name,null)
                 {
-                    StudentCards = grp.Students.Select(std => new StudentCard(std.StudentIp)).ToList()
+                    StudentCards = grp.Students.Select(std => new StudentCard(std.StudentIp,std.StudentCard.MAC)).ToList()
                 }).ToList();
 
                 foreach (var item in group)
@@ -77,7 +83,7 @@ namespace Assi.Server.ViewModels
                     Groups.Add(item);
                 };
                 
-                var students = sql.StudentCards.Select(sdc => new StudentCard(sdc.Ip)).ToList();
+                var students = sql.StudentCards.Select(sdc => new StudentCard(sdc.Ip,sdc.MAC)).ToList();
                 for (int i = 0; i < students.Count; i++) 
                 {
                     students[i].ItemIndex = i;
@@ -135,8 +141,7 @@ namespace Assi.Server.ViewModels
         public ICommand RemoteScreenBlackoutCommand { get; }
         private async void RemoteScreenBlackout()
         {
-
-            await App.Current.Services.GetService<EnhancedChatServer>().SendMessageAsync("", 0, new ChatInfoModel()
+            await App.Current.Services.GetService<EnhancedChatServer>().BroadcastAsync(new ChatInfoModel()
             {
                 MsgType = MsgType.System,
                 Message = "_close_desktop",
@@ -202,6 +207,16 @@ namespace Assi.Server.ViewModels
                     Group.StudentCards.Add((StudentCard)item);
                 }
                 Groups.Add(Group);
+
+                Guid groupId = Guid.NewGuid();
+                await App.Current._sqlite.Groups.AddAsync(new GroupInfo()
+                {
+                    Id = groupId,
+                    Name = imw.resultStr,
+                    Students = Group.StudentCards.Select(sdc=> new GroupStudent() { GroupId = groupId, StudentIp = sdc.Ip }).ToList()
+                });
+
+                await App.Current._sqlite.SaveChangesAsync();
             }
         }
         #endregion

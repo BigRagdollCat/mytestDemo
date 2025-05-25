@@ -17,9 +17,12 @@ namespace Assi.Server.ViewModels
         private int _itemIndex;
         [ObservableProperty]
         private string _ip;
+        [ObservableProperty]
+        private string _mac;
 
-        public StudentCard(string ip)
+        public StudentCard(string mac,string ip)
         {
+            Mac = mac;
             Ip = ip;
         }
     }
