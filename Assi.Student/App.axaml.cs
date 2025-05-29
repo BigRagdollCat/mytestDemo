@@ -42,6 +42,7 @@ namespace Assi.Student
         {
             AvaloniaXamlLoader.Load(this);
         }
+
         public override void RegisterServices()
         {
             base.RegisterServices();
@@ -92,6 +93,7 @@ namespace Assi.Student
                 {
                     WorkBackgroundService backgroundService = (WorkBackgroundService)Services.GetRequiredService<IHostedService>();
                     backgroundService.OnChatInfo += Services.GetRequiredService<ChatService>().ChatRun;
+
                     // 获取并启动 HostedService
                     backgroundService.StartAsync(CancellationToken.None);
 

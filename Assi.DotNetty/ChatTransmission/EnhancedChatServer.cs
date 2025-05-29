@@ -86,7 +86,7 @@ namespace Assi.DotNetty.ChatTransmission
         /// <summary>
         /// 向局域网广播消息
         /// </summary>
-        public async Task BroadcastAsync(ChatInfoModel message)
+        public async Task BroadcastAsync(ChatInfoModel message,int port)
         {
             if (_channel == null || !_channel.Active)
             {
@@ -99,7 +99,7 @@ namespace Assi.DotNetty.ChatTransmission
                 var byteBuffer = Unpooled.CopiedBuffer(msg, Encoding.UTF8);
 
                 // 使用受限广播地址
-                var broadcastAddress = new IPEndPoint(IPAddress.Parse("255.255.255.255"), _broadcastPort);
+                var broadcastAddress = new IPEndPoint(IPAddress.Parse("255.255.255.255"), port);
                 var datagramPacket = new DatagramPacket(byteBuffer, broadcastAddress);
 
                 await _channel.WriteAndFlushAsync(datagramPacket);

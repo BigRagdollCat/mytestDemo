@@ -22,7 +22,7 @@ namespace Assi.Student.Services
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {    // 启动UDP服务
+        {   // 启动UDP服务
             await _enhancedChatServer.StartAsync(OnChatInfo);
 
             // 等待停止信号

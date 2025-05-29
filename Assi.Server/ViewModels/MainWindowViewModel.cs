@@ -92,6 +92,7 @@ namespace Assi.Server.ViewModels
                 Groups.Insert(0, new Group("全部学生", students) { IsCheck = true });
             }
             #endregion
+
             DisplayStudentCards = new AvaloniaList<StudentCard>();
             SelectedGrop = Groups.FirstOrDefault();
         }
@@ -146,7 +147,7 @@ namespace Assi.Server.ViewModels
                 MsgType = MsgType.System,
                 Message = "_close_desktop",
                 SendTimeSpan = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
-            });
+            }, 8089);
         }
         #endregion
 

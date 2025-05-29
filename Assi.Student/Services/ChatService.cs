@@ -12,7 +12,7 @@ namespace Assi.Student.Services
     {
         public ConcurrentQueue<ChatInfoModel> SystemChatInfoQue { get; set; } = new ConcurrentQueue<ChatInfoModel>();
         public ConcurrentQueue<ChatInfoModel> MessageChatinfoQue { get; set; } = new ConcurrentQueue<ChatInfoModel>();
-        public void ChatRun(ChatInfoModel cinfo) 
+        public void ChatRun(ChatInfoModel cinfo)
         {
             if (cinfo.MsgType == MsgType.System)
             {
