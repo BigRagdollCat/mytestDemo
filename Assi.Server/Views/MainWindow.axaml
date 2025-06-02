@@ -8,12 +8,13 @@
 		x:Class="Assi.Server.Views.MainWindow"
 		x:DataType="vm:MainWindowViewModel"
 		Icon="/Resources/assiLogo.png"
-		Title="Assi" WindowStartupLocation="CenterScreen">
-	<Design.DataContext>
-		<!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+		Title="Assi" WindowStartupLocation="CenterScreen"
+		DataContext="{StaticResource MainWindowViewModel}">
+	<!--<Design.DataContext>
+		--><!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) --><!--
 		<vm:MainWindowViewModel/>
-	</Design.DataContext>
+	</Design.DataContext>-->
 	<Grid>
 		<Grid.ColumnDefinitions>
 			<ColumnDefinition Width="186"/>
@@ -73,6 +74,8 @@
 							Content="下  课" Command="{Binding ClassOverCommand}"/>
 					<Button Margin="2 0 0 0" Height="36" Width="87" Classes="h1"
 							Content="备份还原" Command="{Binding RestoreFromBackupCommand}"/>
+					<Button Margin="2 0 0 0" Height="36" Width="87" Classes="h1"
+							Content="索检学生机" Command="{Binding SearchClientCommand}"/>
 				</StackPanel>
 			</Border>
 			<Border Name="zBord" CornerRadius="5" Grid.Row="2" Background="White" Margin="12 0 12 0">

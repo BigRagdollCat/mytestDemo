@@ -19,4 +19,8 @@
     <ProjectReference Include="..\Assi.DotNetty\Assi.DotNetty.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="ModelBaseList\" />
+  </ItemGroup>
+
 </Project>

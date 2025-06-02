@@ -17,9 +17,9 @@ namespace SQLiteLibrary
         [Column(name:"Ip")]
         public string Ip { get; set; }
         [Column(name: "Index")]
-        public int Index{ get; set; }
+        public int? Index{ get; set; }
         [Column(name: "Name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [NotMapped]
         public virtual ICollection<GroupStudent> Groups { get; set; }  // 导航属性

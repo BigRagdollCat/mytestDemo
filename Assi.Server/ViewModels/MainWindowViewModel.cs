@@ -20,6 +20,9 @@ namespace Assi.Server.ViewModels
 {
     public partial class MainWindowViewModel : ViewModelBase
     {
+        private static readonly Lazy<MainWindowViewModel> _instance = new(() => new MainWindowViewModel());
+        public static MainWindowViewModel Instance => _instance.Value;
+
         public AvaloniaList<StudentCard> DisplayStudentCards { get; }
         public AvaloniaList<Group> Groups { get; set; }
 
@@ -60,6 +63,7 @@ namespace Assi.Server.ViewModels
             ClassOverCommand = new RelayCommand(ClassOver);
             RestoreFromBackupCommand = new RelayCommand(RestoreFromBackup);
             CreateGroupCommand = new RelayCommand<object>(CreateGroup);
+            SearchClientCommand = new RelayCommand(SearchClient);   
             #endregion
 
             #region 读取数据库数据
@@ -142,7 +146,7 @@ namespace Assi.Server.ViewModels
         public ICommand RemoteScreenBlackoutCommand { get; }
         private async void RemoteScreenBlackout()
         {
-            await App.Current.Services.GetService<EnhancedChatServer>().BroadcastAsync(new ChatInfoModel()
+            await App.Current.Services.GetService<EnhancedChatServer>().BroadcastAsync(new ChatInfoModel<object>()
             {
                 MsgType = MsgType.System,
                 Message = "_close_desktop",
@@ -178,9 +182,14 @@ namespace Assi.Server.ViewModels
 
         #region 下课
         public ICommand ClassOverCommand { get; }
-        public void ClassOver()
+        public async void ClassOver()
         {
-
+            await App.Current.Services.GetService<EnhancedChatServer>().BroadcastAsync(new ChatInfoModel<object>()
+            {
+                MsgType = MsgType.System,
+                Message = "_close_client",
+                SendTimeSpan = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+            }, 8089);
         }
         #endregion
 
@@ -192,6 +201,18 @@ namespace Assi.Server.ViewModels
         }
         #endregion
 
+        #region 备份还原
+        public ICommand SearchClientCommand { get; }
+        public async void SearchClient()
+        {
+            await App.Current.Services.GetService<EnhancedChatServer>().BroadcastAsync(new ChatInfoModel<object>()
+            {
+                MsgType = MsgType.System,
+                Message = "_search_client",
+                SendTimeSpan = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+            }, 8089);
+        }
+        #endregion
 
         #region 添加群众
         public ICommand CreateGroupCommand { get; }

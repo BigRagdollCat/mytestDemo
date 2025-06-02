@@ -9,5 +9,6 @@ namespace Assi.Student.Models
 {
     public class ModelBase : ObservableObject
     {
+
     }
 }

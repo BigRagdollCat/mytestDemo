@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Assi.Student.Services
 {
-    public class LockscreenService
+    public static class LockscreenService
     {
         #region 屏蔽管理器
         private const int PROCESS_SUSPEND_RESUME = 0x0800;
@@ -52,7 +53,5 @@ namespace Assi.Student.Services
             }
         }
         #endregion
-
-
     }
 }

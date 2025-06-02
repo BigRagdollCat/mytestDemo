@@ -30,7 +30,7 @@ namespace Assi.DotNetty.ChatTransmission
             _bootstrap = new Bootstrap();
         }
 
-        public async Task StartAsync(Action<ChatInfoModel> _chatWork)
+        public async Task StartAsync(Action<ChatInfoModel<object>> _chatWork)
         {
             try
             {
@@ -51,6 +51,7 @@ namespace Assi.DotNetty.ChatTransmission
             }
 
         }
+
         /// <summary>
         /// 向指定的目标地址发送消息。
         /// </summary>
@@ -58,7 +59,7 @@ namespace Assi.DotNetty.ChatTransmission
         /// <param name="targetPort">目标端口号。</param>
         /// <param name="message">要发送的消息。</param>
         /// <returns>是否成功发送消息。</returns>
-        public async Task<bool> SendMessageAsync(string targetIp, int targetPort, ChatInfoModel message)
+        public async Task<bool> SendMessageAsync<T>(string targetIp, int targetPort, ChatInfoModel<T> message)
         {
             if (_channel == null || !_channel.Active)
             {
@@ -86,7 +87,7 @@ namespace Assi.DotNetty.ChatTransmission
         /// <summary>
         /// 向局域网广播消息
         /// </summary>
-        public async Task BroadcastAsync(ChatInfoModel message,int port)
+        public async Task BroadcastAsync(ChatInfoModel<object> message,int port)
         {
             if (_channel == null || !_channel.Active)
             {

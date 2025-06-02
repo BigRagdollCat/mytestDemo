@@ -15,7 +15,7 @@ namespace Assi.Server.Services
         private readonly EnhancedChatServer _enhancedChatServer;
         private readonly EnhancedFileServer _enhancedFileServer;
 
-        public Action<ChatInfoModel> OnChatInfo { get; set; }
+        public Action<ChatInfoModel<object>> OnChatInfo { get; set; }
 
         public WorkBackgroundService(EnhancedChatServer enhancedChatServer, EnhancedFileServer enhancedFileServer)
         {
@@ -24,7 +24,7 @@ namespace Assi.Server.Services
             OnChatInfo += CanRun;
         }
 
-        public void CanRun(ChatInfoModel chatInfo)
+        public void CanRun(ChatInfoModel<object> chatInfo)
         {
             
         }

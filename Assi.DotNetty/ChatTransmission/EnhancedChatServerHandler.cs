@@ -15,11 +15,11 @@ namespace Assi.DotNetty.ChatTransmission
 {
     public class EnhancedChatServerHandler : SimpleChannelInboundHandler<DatagramPacket>, IDisposable
     {
-        private readonly ConcurrentQueue<ChatInfoModel> _chatInfoQueue = new();
+        private readonly ConcurrentQueue<ChatInfoModel<object>> _chatInfoQueue = new();
         private readonly System.Timers.Timer _chatTimer;
-        private readonly Action<ChatInfoModel> _chatWork;
+        private readonly Action<ChatInfoModel<object>> _chatWork;
 
-        public EnhancedChatServerHandler(Action<ChatInfoModel> chatWork)
+        public EnhancedChatServerHandler(Action<ChatInfoModel<object>> chatWork)
         {
             _chatWork = chatWork;
             _chatTimer = new System.Timers.Timer(500);
@@ -45,12 +45,17 @@ namespace Assi.DotNetty.ChatTransmission
 
         protected override void ChannelRead0(IChannelHandlerContext ctx, DatagramPacket packet)
         {
+            // 获取发送者的 IPEndPoint
+            IPEndPoint endPoint = (IPEndPoint)packet.Sender;
+            // 获取 IP 地址和端口号 :{endPoint.Address.MapToIPv4()}{endPoint.Port} 
             try
             {
                 var jsonStr = packet.Content.ToString(Encoding.UTF8);
-                var jsonObject = JsonConvert.DeserializeObject<ChatInfoModel>(jsonStr);
+                var jsonObject = JsonConvert.DeserializeObject<ChatInfoModel<object>>(jsonStr);
                 if (jsonObject != null)
                 {
+                    jsonObject.Ip = $"{endPoint.Address.MapToIPv4()}";
+                    jsonObject.Port = endPoint.Port;
                     _chatInfoQueue.Enqueue(jsonObject);
                 }
             }

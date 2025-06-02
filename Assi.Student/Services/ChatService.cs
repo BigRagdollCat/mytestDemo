@@ -1,4 +1,5 @@
 ﻿using Assi.DotNetty.ChatTransmission;
+using Assi.Student.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -10,17 +11,36 @@ namespace Assi.Student.Services
 {
     public class ChatService
     {
-        public ConcurrentQueue<ChatInfoModel> SystemChatInfoQue { get; set; } = new ConcurrentQueue<ChatInfoModel>();
-        public ConcurrentQueue<ChatInfoModel> MessageChatinfoQue { get; set; } = new ConcurrentQueue<ChatInfoModel>();
-        public void ChatRun(ChatInfoModel cinfo)
+        public ConcurrentQueue<ChatInfoModel<object>> SystemChatInfoQue { get; set; } = new ConcurrentQueue<ChatInfoModel<object>>();
+        public ConcurrentQueue<ChatInfoModel<object>> MessageChatinfoQue { get; set; } = new ConcurrentQueue<ChatInfoModel<object>>();
+        public async void ChatRun(ChatInfoModel<object> cinfo)
         {
-            if (cinfo.MsgType == MsgType.System)
+            //if (cinfo.MsgType == MsgType.System)
+            //{
+            //    SystemChatInfoQue.Enqueue(cinfo);
+            //}
+            //else
+            //{
+            //    MessageChatinfoQue.Enqueue(cinfo);
+            //}
+            await WorkServer(cinfo);
+        }
+
+        public async Task WorkServer(ChatInfoModel<object> cinfo)
+        {
+            switch (cinfo.Message)
             {
-                SystemChatInfoQue.Enqueue(cinfo);
-            }
-            else
-            {
-                MessageChatinfoQue.Enqueue(cinfo);
+                case "_close_desktop":
+
+                    break;
+                case "_search_client":
+                    await SearchClientService.ReplySearch(cinfo.Ip,cinfo.Port);
+                    break;
+                case "_close_client":
+                    CloseClientService.CloseClient();
+                    break;
+                default:
+                    break;
             }
         }
     }

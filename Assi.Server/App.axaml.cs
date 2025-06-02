@@ -26,7 +26,6 @@ namespace Assi.Server
         /// Gets the current <see cref="App"/> instance in use
         /// </summary>
         public new static App Current => (App)Application.Current;
-
         /// <summary>
         /// Gets the <see cref="IServiceProvider"/> instance to resolve application services.
         /// </summary>
@@ -41,6 +40,8 @@ namespace Assi.Server
         public override void RegisterServices()
         {
             base.RegisterServices();
+            // 注册全局 ViewModel 到资源中
+            Resources["MainWindowViewModel"] = MainWindowViewModel.Instance;
             _sqlite = new SQLiteBase();
             _sqlite.Database.EnsureCreated();
             Services = ConfigureServices();
@@ -79,7 +80,7 @@ namespace Assi.Server
         {
             var mainWindows = new MainWindow
             {
-                DataContext = new MainWindowViewModel(),
+                DataContext = MainWindowViewModel.Instance,
             };
             var windowService = Services.GetRequiredService<IMainWindowService>() as MainWindowService;
             windowService?.Initialize(mainWindows);

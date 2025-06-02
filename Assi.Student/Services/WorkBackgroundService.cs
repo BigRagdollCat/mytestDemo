@@ -14,7 +14,7 @@ namespace Assi.Student.Services
     {
         private readonly EnhancedChatServer _enhancedChatServer;
 
-        public Action<ChatInfoModel> OnChatInfo { get; set; }
+        public Action<ChatInfoModel<object>> OnChatInfo { get; set; }
 
         public WorkBackgroundService(EnhancedChatServer enhancedChatServer)
         {

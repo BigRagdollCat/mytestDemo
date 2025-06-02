@@ -130,5 +130,23 @@ namespace Assi.Services
 
             return new IPAddress(broadcastBytes);
         }
+
+        public static string GetMac()
+        {
+            // 获取所有可用的网络接口
+            var interfaces = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(nic => nic.OperationalStatus == OperationalStatus.Up && // 正在运行的接口
+                              nic.NetworkInterfaceType != NetworkInterfaceType.Loopback) // 排除环回接口
+                .ToList();
+
+            // 选择第一个符合条件的接口
+            var validNic = interfaces.FirstOrDefault();
+            if (validNic != null)
+            {
+                return validNic.GetPhysicalAddress().ToString();
+            }
+
+            return "MAC Address Not Found";
+        }
     }
 }

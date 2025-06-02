@@ -15,65 +15,61 @@ namespace Assi.DotNetty.FileTransmission
 {
     public class EnhancedFileServerHandler : ChannelHandlerAdapter
     {
-        private readonly ConcurrentDictionary<string, FileTransferState> _fileStates = new();
-        private readonly ConcurrentDictionary<IChannel, ClientContext> _clientContexts = new();
+        private readonly ConcurrentDictionary<IChannel, ClientTransferState> _clientStates = new();
 
         public override void ChannelActive(IChannelHandlerContext context)
         {
-            _clientContexts.TryAdd(context.Channel, new ClientContext());
-        }
+            // 获取客户端连接信息
+            var remoteAddress = context.Channel.RemoteAddress as System.Net.IPEndPoint;
+            string ip = remoteAddress?.Address.ToString() ?? "unknown";
+            int port = remoteAddress?.Port ?? 0;
 
-        public override void ChannelRead(IChannelHandlerContext context, object message)
-        {
-            if (message is FileRequest request)
+            // 创建客户端状态对象
+            var state = new ClientTransferState("", 0)
             {
-                HandleRequest(context, request);
-            }
-            else if (message is FileChunk chunk)
-            {
-                HandleChunk(context, chunk);
-            }
+                Ip = ip,
+                Port = port,
+                Status = TransferStatus.Pending
+            };
+
+            _clientStates.TryAdd(context.Channel, state);
+            Console.WriteLine($"客户端连接: {ip}:{port}");
         }
 
         private void HandleRequest(IChannelHandlerContext context, FileRequest request)
         {
             var client = context.Channel;
-            var fileName = request.FileName;
-            var action = request.Action;
+            if (!_clientStates.TryGetValue(client, out var state))
+            {
+                context.WriteAndFlushAsync("传输状态错误");
+                return;
+            }
 
-            switch (action)
+            state.FileName = request.FileName;
+            state.TotalSize = request.FileSize;
+            state.CurrentOffset = 0;
+            state.StartTime = DateTime.Now;
+            state.LastUpdateTime = state.StartTime;
+
+            switch (request.Action)
             {
                 case FileAction.Upload:
-                    // 初始化上传状态
-                    var uploadState = new FileTransferState
-                    {
-                        FileName = fileName,
-                        TotalSize = request.FileSize,
-                        CurrentOffset = 0,
-                        FileStream = File.Open(fileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None)
-                    };
-                    _fileStates.TryAdd(fileName, uploadState);
-                    _clientContexts[client].CurrentFile = uploadState;
-                    context.WriteAndFlushAsync($"Upload started for {fileName}");
+                    state.Status = TransferStatus.Uploading;
+                    state.FileStream = File.Open(request.FileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+                    context.WriteAndFlushAsync($"开始上传: {request.FileName}");
                     break;
 
                 case FileAction.Download:
-                    // 初始化下载状态
-                    if (File.Exists(fileName))
+                    state.Status = TransferStatus.Downloading;
+                    if (File.Exists(request.FileName))
                     {
-                        var downloadState = new FileTransferState
-                        {
-                            FileName = fileName,
-                            TotalSize = new FileInfo(fileName).Length,
-                            CurrentOffset = 0,
-                            FileStream = File.OpenRead(fileName)
-                        };
-                        _clientContexts[client].CurrentFile = downloadState;
-                        context.WriteAndFlushAsync($"Download started for {fileName}");
+                        state.FileStream = File.OpenRead(request.FileName);
+                        context.WriteAndFlushAsync($"开始下载: {request.FileName}");
                     }
                     else
                     {
-                        context.WriteAndFlushAsync($"File not found: {fileName}");
+                        state.Status = TransferStatus.Interrupted;
+                        context.WriteAndFlushAsync($"文件不存在: {request.FileName}");
                     }
                     break;
             }
@@ -82,57 +78,56 @@ namespace Assi.DotNetty.FileTransmission
         private void HandleChunk(IChannelHandlerContext context, FileChunk chunk)
         {
             var client = context.Channel;
-            if (!_clientContexts.TryGetValue(client, out var clientCtx) || clientCtx.CurrentFile == null)
+            if (!_clientStates.TryGetValue(client, out var state) || state.FileStream == null)
             {
-                context.WriteAndFlushAsync("Invalid transfer state");
+                context.WriteAndFlushAsync("无效的传输状态");
                 return;
             }
 
-            var fileState = clientCtx.CurrentFile;
-            var receivedOffset = chunk.Offset;
-            var data = chunk.Data;
-
-            // 断点续传：验证偏移量
-            if (receivedOffset != fileState.CurrentOffset)
+            // 验证偏移量
+            if (!state.IsOffsetValid(chunk.Offset))
             {
-                context.WriteAndFlushAsync($"Invalid offset: Expected {fileState.CurrentOffset}, got {receivedOffset}");
+                context.WriteAndFlushAsync($"偏移量错误: 预期 {state.CurrentOffset}, 收到 {chunk.Offset}");
                 return;
             }
 
             // 写入数据
-            lock (fileState.FileStream)
+            lock (state.LockObject)
             {
-                fileState.FileStream.Seek(receivedOffset, SeekOrigin.Begin);
-                fileState.FileStream.Write(data);
-                fileState.CurrentOffset += data.Length;
+                state.FileStream.Seek(chunk.Offset, SeekOrigin.Begin);
+                state.FileStream.Write(chunk.Data, 0, chunk.Data.Length);
+                state.UpdateOffset(chunk.Offset + chunk.Data.Length, chunk.Data.Length);
             }
 
-            // 完成上传
-            if (fileState.CurrentOffset >= fileState.TotalSize)
+            // 检查是否完成
+            if (state.CurrentOffset >= state.TotalSize)
             {
-                fileState.FileStream.Close();
-                _fileStates.TryRemove(fileState.FileName, out _);
-                _clientContexts[client].CurrentFile = null;
-                context.WriteAndFlushAsync("Transfer completed");
+                state.Dispose();
+                context.WriteAndFlushAsync("传输完成");
             }
             else
             {
-                context.WriteAndFlushAsync($"Received {data.Length} bytes at offset {receivedOffset}");
+                // 定期报告进度
+                if (DateTime.Now - state.LastUpdateTime > TimeSpan.FromSeconds(1))
+                {
+                    double progress = state.GetProgressPercentage();
+                    TimeSpan remaining = state.GetEstimatedRemainingTime();
+                    context.WriteAndFlushAsync($"进度: {progress:F1}%, 剩余时间: {remaining:mm\\:ss}");
+                }
             }
-        }
-
-        public override void ExceptionCaught(IChannelHandlerContext context, Exception exception)
-        {
-            Console.WriteLine($"Exception: {exception.Message}");
-            context.CloseAsync();
         }
 
         public override void ChannelInactive(IChannelHandlerContext context)
         {
             var client = context.Channel;
-            if (_clientContexts.TryRemove(client, out var clientCtx))
+            if (_clientStates.TryRemove(client, out var state))
             {
-                clientCtx.CurrentFile?.FileStream?.Close();
+                if (state.Status == TransferStatus.Uploading || state.Status == TransferStatus.Downloading)
+                {
+                    state.Status = TransferStatus.Interrupted;
+                    Console.WriteLine($"传输中断: {state.FileName}, 进度: {state.GetProgressPercentage():F1}%");
+                }
+                state.Dispose();
             }
         }
     }
