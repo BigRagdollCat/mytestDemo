@@ -45,6 +45,7 @@ namespace Assi.Server
         public override void RegisterServices()
         {
             base.RegisterServices();
+            FFmpegHelper.RegisterFFmpegBinaries();
             // 注册全局 ViewModel 到资源中
             _sqlite = new SQLiteBase();
             _sqlite.Database.EnsureCreated();

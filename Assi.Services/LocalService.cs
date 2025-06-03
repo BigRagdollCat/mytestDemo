@@ -19,6 +19,8 @@ namespace Assi.Services
     {
 
         #region 屏蔽管理器
+        private static KeyboardHook _keyboardHook = new KeyboardHook();
+
         private const int PROCESS_SUSPEND_RESUME = 0x0800;
 
         [DllImport("ntdll.dll", SetLastError = true)]
@@ -58,6 +60,20 @@ namespace Assi.Services
                 NtResumeProcess(hProcess);
                 CloseHandle(hProcess);
             }
+        }
+
+        public static void UnLockRun()
+        {
+            //this.lockWindow.Visibility = Visibility.Collapsed;
+            _keyboardHook.StopHook();
+            ResumeWinLogon();
+        }
+
+        public static void LockRun()
+        {
+            //his.lockWindow.Show();
+            _keyboardHook.StartHook();
+            SuspendWinLogon();
         }
         #endregion
 

@@ -1,4 +1,5 @@
 ﻿using Assi.DotNetty.ChatTransmission;
+using Assi.Services;
 using Assi.Student.Models;
 using System;
 using System.Collections.Concurrent;
@@ -31,7 +32,10 @@ namespace Assi.Student.Services
             switch (cinfo.Message)
             {
                 case "_close_desktop":
-
+                    if (cinfo != null)
+                    {
+                        CloseDeskTop((bool)cinfo.Body);
+                    }
                     break;
                 case "_search_client":
                     await SearchClientService.ReplySearch(cinfo.Ip,cinfo.Port);
@@ -42,9 +46,23 @@ namespace Assi.Student.Services
                 case "_file_upload":
                     FileClientService fcs = new FileClientService(cinfo.Ip);
                     fcs.Start(cinfo.Body.ToString());
-                    break; 
+                    break;
+                case "":
+                    break;
                 default:
                     break;
+            }
+        }
+
+        public void CloseDeskTop(bool body)
+        {
+            if (body)
+            {
+                LocalService.LockRun();
+            }
+            else
+            {
+                LocalService.UnLockRun();
             }
         }
     }

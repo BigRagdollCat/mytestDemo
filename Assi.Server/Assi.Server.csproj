@@ -72,4 +72,40 @@
     <ProjectReference Include="..\Assi.Services\Assi.Services.csproj" />
     <ProjectReference Include="..\SQLiteLibrary\SQLiteLibrary.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="FFmpeg\workbin\x64\avcodec-61.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="FFmpeg\workbin\x64\avdevice-61.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="FFmpeg\workbin\x64\avfilter-10.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="FFmpeg\workbin\x64\avformat-61.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="FFmpeg\workbin\x64\avutil-59.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="FFmpeg\workbin\x64\ffmpeg.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="FFmpeg\workbin\x64\ffplay.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="FFmpeg\workbin\x64\ffprobe.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="FFmpeg\workbin\x64\postproc-58.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="FFmpeg\workbin\x64\swresample-5.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="FFmpeg\workbin\x64\swscale-8.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
