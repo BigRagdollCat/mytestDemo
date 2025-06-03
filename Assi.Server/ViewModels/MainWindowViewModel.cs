@@ -21,6 +21,7 @@ using Avalonia.Controls;
 using System.IO;
 using System.Threading.Tasks;
 using SkiaSharp;
+using Assi.DotNetty.ScreenTransmission;
 
 namespace Assi.Server.ViewModels
 {
@@ -105,6 +106,18 @@ namespace Assi.Server.ViewModels
             }
             #endregion
 
+            recorder.OnEncodedFrame += async data =>
+            {
+                Console.WriteLine($"Received encoded frame, size: {data.Length} bytes");
+                await App.Current.Services.GetService<VideoBroadcastServer>().BroadcastFrameAsync(data, 10089);
+            };
+
+            // 订阅错误事件
+            recorder.OnEncodingError += ex =>
+            {
+                Console.WriteLine($"Encoding error: {ex.Message}");
+            };
+
             DisplayStudentCards = new AvaloniaList<StudentCard>();
             SelectedGrop = Groups.FirstOrDefault();
         }
@@ -135,38 +148,27 @@ namespace Assi.Server.ViewModels
         private double _cpuNum;
 
         #region 教师演示
-        private FileStream _fileStream;
+        public ScreenRecorder recorder = new ScreenRecorder();
         public ICommand TeacherDemonstrationCommand { get; }
-        private void TeacherDemonstration()
+        public bool IsRecorder { get; set; } = false;
+        private async void TeacherDemonstration()
         {
-            var recorder = new ScreenRecorder();
-            _fileStream = new FileStream("output.h264", FileMode.Create, FileAccess.Write, FileShare.None);
-            // 订阅编码帧事件（例如保存为文件或推流）
-            recorder.OnEncodedFrame += data =>
+            IsRecorder = !IsRecorder;
+            await App.Current.Services.GetService<EnhancedChatServer>().BroadcastAsync(new ChatInfoModel<object>()
             {
-                Console.WriteLine($"Received encoded frame, size: {data.Length} bytes");
-                // 示例：将 H.264 数据写入文件
-                _fileStream?.Write(data, 0, data.Length);
-            };
-
-            // 订阅错误事件
-            recorder.OnEncodingError += ex =>
+                MsgType = MsgType.System,
+                Message = "_server_desktop",
+                SendTimeSpan = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                Body = IsRecorder
+            }, 8089);
+            if (IsRecorder)
             {
-                Console.WriteLine($"Encoding error: {ex.Message}");
-            };
-
-            try
-            {
-                Console.WriteLine("Starting screen recording...");
                 recorder.Start();
-
-                Console.WriteLine("Recording... Press Enter to stop.");
-                Console.ReadLine(); // 按回车停止录制
             }
-            finally
+            else
             {
-                //recorder.Stop();
-                //recorder.Dispose();
+                recorder.Stop();
+                recorder.Dispose();
             }
         }
         #endregion

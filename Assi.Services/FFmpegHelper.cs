@@ -14,7 +14,7 @@ namespace Assi.Services
             //获取当前软件启动的位置
             var currentFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
             //ffmpeg在项目中放置的位置
-            var probe = Path.Combine("FFmpeg", "workbin", Environment.Is64BitOperatingSystem ? "x64" : "x86");
+            var probe = Path.Combine("FFmpeg", "workbin");
             while (currentFolder != null)
             {
                 var ffmpegBinaryPath = Path.Combine(currentFolder, probe);

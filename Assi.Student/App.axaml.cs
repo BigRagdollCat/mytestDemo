@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Assi.Services;
 using Assi.Student.Services;
+using Assi.DotNetty.ScreenTransmission;
 
 namespace Assi.Student
 {
@@ -46,6 +47,7 @@ namespace Assi.Student
         public override void RegisterServices()
         {
             base.RegisterServices();
+            FFmpegHelper.RegisterFFmpegBinaries();
             Services = ConfigureServices();
         }
         private static IServiceProvider ConfigureServices()
@@ -53,12 +55,20 @@ namespace Assi.Student
             try
             {
                 var services = new ServiceCollection();
-                services.AddSingleton<EnhancedChatServer>(sp =>
+                services.AddSingleton(sp =>
                 {
                     var port = 8089; // 手动传入端口号
                     return new EnhancedChatServer(port, Environment.ProcessorCount);
                 });
                 services.AddSingleton<ChatService>();
+
+
+                services.AddSingleton(sp =>
+                {
+                    return new VideoBroadcastServer(10089, Environment.ProcessorCount);
+                });
+                services.AddSingleton<VoideService>();
+
                 // 注册其他服务...
                 services.AddHostedService<WorkBackgroundService>();
                 return services.BuildServiceProvider();
@@ -93,6 +103,7 @@ namespace Assi.Student
                 {
                     WorkBackgroundService backgroundService = (WorkBackgroundService)Services.GetRequiredService<IHostedService>();
                     backgroundService.OnChatInfo += Services.GetRequiredService<ChatService>().ChatRun;
+                    backgroundService.OnVideo += Services.GetRequiredService<VoideService>().VoideRun;
 
                     // 获取并启动 HostedService
                     backgroundService.StartAsync(CancellationToken.None);

@@ -49,7 +49,6 @@ namespace Assi.DotNetty.ChatTransmission
             {
                 throw;
             }
-
         }
 
         /// <summary>

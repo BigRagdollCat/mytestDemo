@@ -19,6 +19,7 @@ using SQLiteLibrary;
 using SQLitePCL;
 using System.IO;
 using Avalonia.Controls;
+using Assi.DotNetty.ScreenTransmission;
 
 namespace Assi.Server
 {
@@ -47,8 +48,10 @@ namespace Assi.Server
             base.RegisterServices();
             FFmpegHelper.RegisterFFmpegBinaries();
             // 注册全局 ViewModel 到资源中
+
             _sqlite = new SQLiteBase();
             _sqlite.Database.EnsureCreated();
+
             Services = ConfigureServices();
             Resources["MainWindowViewModel"] = MainWindowViewModel.Instance;
         }
@@ -57,13 +60,19 @@ namespace Assi.Server
             try
             {
                 var services = new ServiceCollection();
-                services.AddSingleton<EnhancedChatServer>(sp =>
+
+                services.AddSingleton(sp =>
                 {
-                    var port = 8099; // 手动传入端口号
-                    return new EnhancedChatServer(port, Environment.ProcessorCount);
+                    return new EnhancedChatServer(8099, Environment.ProcessorCount);
                 });
                 services.AddSingleton<ChatService>();
-                services.AddSingleton<EnhancedFileClient>();
+
+                services.AddSingleton(sp => 
+                {
+                    return new VideoBroadcastServer(10099, Environment.ProcessorCount);
+                });
+                services.AddSingleton<VoideService>();
+
                 // 注册其他服务...
                 services.AddHostedService<WorkBackgroundService>();
                 services.AddSingleton<IMainWindowService,MainWindowService>();

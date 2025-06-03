@@ -1,6 +1,9 @@
 ﻿using Assi.DotNetty.ChatTransmission;
 using Assi.Services;
 using Assi.Student.Models;
+using Assi.Student.ViewModels;
+using Assi.Student.Views;
+using Avalonia.Threading;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -14,6 +17,8 @@ namespace Assi.Student.Services
     {
         public ConcurrentQueue<ChatInfoModel<object>> SystemChatInfoQue { get; set; } = new ConcurrentQueue<ChatInfoModel<object>>();
         public ConcurrentQueue<ChatInfoModel<object>> MessageChatinfoQue { get; set; } = new ConcurrentQueue<ChatInfoModel<object>>();
+        public VoideService VoideService { get; set; }
+
         public async void ChatRun(ChatInfoModel<object> cinfo)
         {
             //if (cinfo.MsgType == MsgType.System)
@@ -47,7 +52,16 @@ namespace Assi.Student.Services
                     FileClientService fcs = new FileClientService(cinfo.Ip);
                     fcs.Start(cinfo.Body.ToString());
                     break;
-                case "":
+                case "_server_desktop":
+                    if ((bool)cinfo.Body)
+                    {
+                        // 在 UI 线程上开始作业并立即返回。
+                        Dispatcher.UIThread.Post(() => MainWindow.PlayerView.Show());
+                    }
+                    else
+                    {
+                        Dispatcher.UIThread.Post(() => MainWindow.PlayerView.IsVisible = false);
+                    }
                     break;
                 default:
                     break;
