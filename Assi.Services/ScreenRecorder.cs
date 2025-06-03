@@ -57,7 +57,7 @@ namespace Assi.Services
         public event Action<byte[]>? OnEncodedFrame;
         public event Action<Exception>? OnEncodingError;
 
-        public void Start()
+        public void Start(int width,int height)
         {
             if (_isRunning) return;
 
@@ -74,7 +74,7 @@ namespace Assi.Services
                 ffmpeg.avformat_network_init();
 
                 // 1. 初始化输入设备
-                SetupInputDevice();
+                SetupInputDevice(width, height);
 
                 // 2. 初始化解码器
                 SetupDecoder();
@@ -94,7 +94,7 @@ namespace Assi.Services
             }
         }
 
-        private void SetupInputDevice()
+        private void SetupInputDevice(int width, int height)
         {
             ffmpeg.avdevice_register_all();
             AVInputFormat* inputFormat = ffmpeg.av_find_input_format("gdigrab");
@@ -103,7 +103,7 @@ namespace Assi.Services
             // 添加帧率和分辨率控制
             AVDictionary* options = null;
             ffmpeg.av_dict_set(&options, "framerate", TargetFPS.ToString(), 0);
-            ffmpeg.av_dict_set(&options, "video_size", "1920x1080", 0);
+            ffmpeg.av_dict_set(&options, "video_size", $"{width}x{height}", 0);
             ffmpeg.av_dict_set(&options, "draw_mouse", "1", 0);
             ffmpeg.av_dict_set(&options, "probesize", "32", 0);
             ffmpeg.av_dict_set(&options, "rtbufsize", "256M", 0);

@@ -22,6 +22,7 @@ using System.IO;
 using System.Threading.Tasks;
 using SkiaSharp;
 using Assi.DotNetty.ScreenTransmission;
+using Assi.Server.Views;
 
 namespace Assi.Server.ViewModels
 {
@@ -163,7 +164,7 @@ namespace Assi.Server.ViewModels
             }, 8089);
             if (IsRecorder)
             {
-                recorder.Start();
+                recorder.Start(MainWindow.Width, MainWindow.Height);
             }
             else
             {
