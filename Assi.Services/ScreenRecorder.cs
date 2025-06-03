@@ -34,6 +34,7 @@ namespace Assi.Services
 
     public unsafe class ScreenRecorder : IDisposable
     {
+
         // FFmpeg 资源
         private AVFormatContext* _inputFormatContext;
         private AVCodecContext* _videoDecoderContext;
@@ -42,7 +43,8 @@ namespace Assi.Services
         private AVFrame* _decodedFrame;
         private AVFrame* _encodedFrame;
         private AVPacket* _inputPacket;
-        private AVPacket* _outputPacket;
+        private AVPacket* _outputPacket; 
+        private int _videoStreamIndex;
 
         // 控制参数
         private volatile bool _isRunning;
@@ -91,9 +93,13 @@ namespace Assi.Services
 
         private void SetupDecoder()
         {
-            int streamIndex = ffmpeg.av_find_best_stream(
+            _videoStreamIndex = ffmpeg.av_find_best_stream(
                 _inputFormatContext, AVMediaType.AVMEDIA_TYPE_VIDEO, -1, -1, null, 0);
-            AVStream* stream = _inputFormatContext->streams[streamIndex];
+
+            if (_videoStreamIndex < 0)
+                throw new InvalidOperationException("Could not find video stream in input");
+
+            AVStream* stream = _inputFormatContext->streams[_videoStreamIndex];
 
             AVCodec* codec = ffmpeg.avcodec_find_decoder(stream->codecpar->codec_id);
             _videoDecoderContext = ffmpeg.avcodec_alloc_context3(codec);
@@ -114,6 +120,12 @@ namespace Assi.Services
             _videoEncoderContext->framerate = new AVRational { num = TargetFPS, den = 1 };
             _videoEncoderContext->gop_size = TargetFPS * 2; // 2秒关键帧间隔
             _videoEncoderContext->max_b_frames = 1;
+            // 在SetupEncoder中添加以下配置
+            _videoEncoderContext->bit_rate = 2_000_000; // 2 Mbps
+            _videoEncoderContext->rc_min_rate = _videoEncoderContext->bit_rate;
+            _videoEncoderContext->rc_max_rate = _videoEncoderContext->bit_rate;
+            _videoEncoderContext->rc_buffer_size = 4_000_000;
+            _videoEncoderContext->level = 40; // H.264 Level 4.0
 
             // 设置编码预设
             ffmpeg.av_opt_set(_videoEncoderContext->priv_data, "preset", "fast", 0);
@@ -162,6 +174,13 @@ namespace Assi.Services
             int ret = ffmpeg.av_read_frame(_inputFormatContext, _inputPacket);
             if (ret == ffmpeg.AVERROR_EOF) return;
             ret.ThrowExceptionIfError();
+
+            // 校验是否为视频流
+            if (_inputPacket->stream_index != _videoStreamIndex)
+            {
+                ffmpeg.av_packet_unref(_inputPacket);
+                return;
+            }
 
             // 2. 发送到解码器
             ffmpeg.avcodec_send_packet(_videoDecoderContext, _inputPacket)
