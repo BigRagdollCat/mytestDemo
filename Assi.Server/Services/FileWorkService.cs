@@ -8,9 +8,5 @@ using Assi.DotNetty.FileTransmission;
 
 namespace Assi.Server.Services
 {
-    public static class FileWorkService
-    {
-        private static ConcurrentDictionary<string, ClientTransferState> _clientStates { get; set; } = 
-            new ConcurrentDictionary<string, ClientTransferState>();
-    }
+
 }

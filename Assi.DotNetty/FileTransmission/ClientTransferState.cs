@@ -92,7 +92,7 @@ namespace Assi.DotNetty.FileTransmission
         {
             lock (LockObject)
             {
-                if (offset < 0 || offset > TotalSize)
+                if (offset < 0)
                     throw new ArgumentOutOfRangeException(nameof(offset), "偏移量超出文件范围");
 
                 CurrentOffset = offset;
@@ -171,52 +171,35 @@ namespace Assi.DotNetty.FileTransmission
 
     public enum TransferStatus
     {
-        Pending,     // 等待开始
-        Uploading,   // 上传中
-        Downloading, // 下载中
-        Completed,   // 已完成
-        Interrupted  // 已中断
+        Pending,
+        Uploading,
+        Downloading,
+        Completed,
+        Interrupted
     }
 
-
-    // 文件请求
-    public class FileRequest
-    {
-        public string FileName { get; set; }
-        public long FileSize { get; set; }
-        public FileAction Action { get; set; }
-    }
-
-    public enum FileAction
-    {
-        Upload,
-        Download
-    }
-
-    // 文件分块
-    public class FileChunk
-    {
-        public long Offset { get; set; }
-        public byte[] Data { get; set; }
-    }
-
-    // 消息头（Header）
-    public class FileMessageHeader
-    {
-        public MessageType Type { get; set; } // 消息类型：文件请求、数据块、确认等
-        public string FileName { get; set; }
-        public long FileSize { get; set; }
-        public long Offset { get; set; } // 当前偏移量
-        public int DataLength { get; set; } // 数据长度
-    }
-
-    // 消息类型
     public enum MessageType
     {
-        FileRequest,   // 文件请求（上传/下载）
-        FileChunk,     // 数据块
-        Ack,           // 确认
-        Cancel,        // 取消传输
-        Complete       // 传输完成
+        FileRequest,     // 客户端上传请求
+        FileChunk,       // 文件分块
+        Ack,             // 确认
+        Cancel,          // 取消
+        Complete,        // 完成
+        PushFile         // 服务端推送文件
+    }
+
+    public class FileMessageHeader
+    {
+        public MessageType Type { get; set; }
+        public string FileName { get; set; }
+        public long FileSize { get; set; }
+        public long Offset { get; set; }
+        public int DataLength { get; set; }
+    }
+
+    public class FileChunkMessage
+    {
+        public FileMessageHeader Header { get; set; }
+        public byte[] Data { get; set; } = new byte[0];
     }
 }

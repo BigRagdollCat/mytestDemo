@@ -39,6 +39,10 @@ namespace Assi.Student.Services
                 case "_close_client":
                     CloseClientService.CloseClient();
                     break;
+                case "_file_upload":
+                    FileClientService fcs = new FileClientService(cinfo.Ip);
+                    fcs.Start(cinfo.Body.ToString());
+                    break; 
                 default:
                     break;
             }

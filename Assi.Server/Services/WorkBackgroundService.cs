@@ -13,14 +13,12 @@ namespace Assi.Server.Services
     public class WorkBackgroundService : BackgroundService
     {
         private readonly EnhancedChatServer _enhancedChatServer;
-        private readonly EnhancedFileServer _enhancedFileServer;
 
         public Action<ChatInfoModel<object>> OnChatInfo { get; set; }
 
-        public WorkBackgroundService(EnhancedChatServer enhancedChatServer, EnhancedFileServer enhancedFileServer)
+        public WorkBackgroundService(EnhancedChatServer enhancedChatServer)
         {
             _enhancedChatServer = enhancedChatServer;
-            _enhancedFileServer = enhancedFileServer;
             OnChatInfo += CanRun;
         }
 

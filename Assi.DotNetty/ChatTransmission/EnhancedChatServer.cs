@@ -87,7 +87,7 @@ namespace Assi.DotNetty.ChatTransmission
         /// <summary>
         /// 向局域网广播消息
         /// </summary>
-        public async Task BroadcastAsync(ChatInfoModel<object> message,int port)
+        public async Task BroadcastAsync<T>(ChatInfoModel<T> message,int port)
         {
             if (_channel == null || !_channel.Active)
             {

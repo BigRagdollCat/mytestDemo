@@ -17,6 +17,8 @@ using Microsoft.Extensions.Hosting;
 using System.Threading;
 using SQLiteLibrary;
 using SQLitePCL;
+using System.IO;
+using Avalonia.Controls;
 
 namespace Assi.Server
 {
@@ -33,6 +35,9 @@ namespace Assi.Server
 
         public SQLiteBase _sqlite { get; set; }
 
+        public TopLevel MainTopLevel { get; private set; }
+
+
         public override void Initialize()
         {
             AvaloniaXamlLoader.Load(this);
@@ -41,10 +46,10 @@ namespace Assi.Server
         {
             base.RegisterServices();
             // 注册全局 ViewModel 到资源中
-            Resources["MainWindowViewModel"] = MainWindowViewModel.Instance;
             _sqlite = new SQLiteBase();
             _sqlite.Database.EnsureCreated();
             Services = ConfigureServices();
+            Resources["MainWindowViewModel"] = MainWindowViewModel.Instance;
         }
         private static IServiceProvider ConfigureServices()
         {
@@ -55,11 +60,6 @@ namespace Assi.Server
                 {
                     var port = 8099; // 手动传入端口号
                     return new EnhancedChatServer(port, Environment.ProcessorCount);
-                });
-                services.AddSingleton<EnhancedFileServer>(sp =>
-                {
-                    var port = 9099; // 手动传入端口号
-                    return new EnhancedFileServer(port, Environment.ProcessorCount);
                 });
                 services.AddSingleton<ChatService>();
                 services.AddSingleton<EnhancedFileClient>();
@@ -78,15 +78,16 @@ namespace Assi.Server
 
         public override void OnFrameworkInitializationCompleted()
         {
-            var mainWindows = new MainWindow
-            {
-                DataContext = MainWindowViewModel.Instance,
-            };
-            var windowService = Services.GetRequiredService<IMainWindowService>() as MainWindowService;
-            windowService?.Initialize(mainWindows);
-
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
+                var mainWindows = new MainWindow
+                {
+                    DataContext = MainWindowViewModel.Instance,
+                };
+                var windowService = Services.GetRequiredService<IMainWindowService>() as MainWindowService;
+                windowService?.Initialize(mainWindows);
+                MainTopLevel = TopLevel.GetTopLevel(mainWindows);
+
                 #region 启动HostService
                 Task.Run(() =>
                 {

@@ -15,6 +15,11 @@ using Microsoft.Extensions.Hosting;
 using System.Linq;
 using SQLiteLibrary;
 using Microsoft.EntityFrameworkCore;
+using Assi.Services;
+using Avalonia.Platform.Storage;
+using Avalonia.Controls;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace Assi.Server.ViewModels
 {
@@ -25,6 +30,8 @@ namespace Assi.Server.ViewModels
 
         public AvaloniaList<StudentCard> DisplayStudentCards { get; }
         public AvaloniaList<Group> Groups { get; set; }
+
+        private FileServer fileServer { get; set; }
 
         #region 分组选中项
         private Group? _selectedGrop;
@@ -158,9 +165,46 @@ namespace Assi.Server.ViewModels
         #region 下发文件
         public ICommand DistributeCommand { get; }
 
-        private void Distribute()
+        private async void Distribute()
         {
+            if (fileServer != null && fileServer.IsRun == true)
+            {
+                await fileServer.Stop();
+            }
+            else
+            {
+                var topLevel = TopLevel.GetTopLevel(App.Current.MainTopLevel);
+                var storageProvider = topLevel.StorageProvider;
 
+                // 异步的保存文件。
+                var resultFile = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+                {
+                    Title = "选择上传的文件",
+                    AllowMultiple = false, // 是否允许多选
+                    FileTypeFilter = new List<FilePickerFileType> { FilePickerFileTypes.All } // 显示所有文件类型
+                });
+                if (resultFile != null)
+                {
+                    string fullPath = resultFile[0].Path.LocalPath;
+
+                    // 提取父目录和文件名
+                    string parentDir = Path.GetDirectoryName(fullPath); // 父目录路径
+                    string fileName = Path.GetFileName(fullPath);       // 文件名（如 "output.txt"）
+
+                    fileServer = new FileServer(parentDir);
+
+                    fileServer.Start();
+
+
+                    await App.Current.Services.GetService<EnhancedChatServer>().BroadcastAsync(new ChatInfoModel<string>()
+                    {
+                        MsgType = MsgType.System,
+                        Message = "_file_upload",
+                        SendTimeSpan = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                        Body = fileName
+                    }, 8089);
+                }
+            }
         }
         #endregion
 
@@ -214,7 +258,7 @@ namespace Assi.Server.ViewModels
         }
         #endregion
 
-        #region 添加群众
+        #region 添加群组
         public ICommand CreateGroupCommand { get; }
         public async void CreateGroup(object sCards)
         {
