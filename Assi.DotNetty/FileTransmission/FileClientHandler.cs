@@ -56,17 +56,25 @@ namespace Assi.DotNetty.FileTransmission
             _transfer.FileStream.Write(data, 0, data.Length);
             _transfer.UpdateOffset(header.Offset + header.DataLength, header.DataLength);
 
-            // 发送确认
-            context.WriteAndFlushAsync(new FileChunkMessage
+            if (context.Channel.Active)
             {
-                Header = new FileMessageHeader
+                // 发送确认
+                context.WriteAndFlushAsync(new FileChunkMessage
                 {
-                    Type = MessageType.Ack,
-                    FileName = header.FileName,
-                    Offset = header.Offset,
-                    DataLength = header.DataLength
-                }
-            });
+                    Header = new FileMessageHeader
+                    {
+                        Type = MessageType.Ack,
+                        FileName = header.FileName,
+                        Offset = header.Offset + header.DataLength,
+                        DataLength = 0,
+                    },
+                    Data = new byte[0]
+                });
+            }
+            else
+            {
+                Console.WriteLine("通道已关闭，无法发送 Ack");
+            }
 
             Console.WriteLine($"已接收: {header.DataLength} 字节，进度: {_transfer.GetProgressPercentage():F2}%");
         }

@@ -89,24 +89,21 @@ namespace Assi.DotNetty.FileTransmission
         private void HandleAck(IChannel channel, FileMessageHeader header)
         {
             if (!_transfers.TryGetValue(channel, out var transfer)) return;
-            if (transfer.IsOffsetValid(header.Offset))
+            transfer.UpdateOffset(header.Offset + header.DataLength, header.DataLength);
+            if (transfer.CurrentOffset >= transfer.TotalSize)
             {
-                transfer.UpdateOffset(header.Offset + header.DataLength, header.DataLength);
-                if (transfer.CurrentOffset >= transfer.TotalSize)
+                transfer.Status = TransferStatus.Completed;
+                channel.WriteAndFlushAsync(new FileChunkMessage
                 {
-                    transfer.Status = TransferStatus.Completed;
-                    channel.WriteAndFlushAsync(new FileChunkMessage
+                    Header = new FileMessageHeader
                     {
-                        Header = new FileMessageHeader
-                        {
-                            Type = MessageType.Complete,
-                            FileName = transfer.FileName
-                        }
-                    });
-                    return;
-                }
-                SendNextChunk(channel, transfer);
+                        Type = MessageType.Complete,
+                        FileName = transfer.FileName
+                    }
+                });
+                return;
             }
+            SendNextChunk(channel, transfer);
         }
 
         private void HandleCancel(IChannel channel, FileMessageHeader header)

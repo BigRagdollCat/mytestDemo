@@ -183,7 +183,7 @@ namespace Assi.Server.ViewModels
                     AllowMultiple = false, // 是否允许多选
                     FileTypeFilter = new List<FilePickerFileType> { FilePickerFileTypes.All } // 显示所有文件类型
                 });
-                if (resultFile != null)
+                if (resultFile != null && resultFile.Count() > 0)
                 {
                     string fullPath = resultFile[0].Path.LocalPath;
 

@@ -16,40 +16,43 @@ namespace Assi.DotNetty.FileTransmission
             var header = message.Header;
             byte[] fileNameBytes = Encoding.UTF8.GetBytes(header.FileName);
 
-            // 计算总长度并确保缓冲区容量
-            int totalLength = 24 + fileNameBytes.Length + header.DataLength;
-            output.EnsureWritable(totalLength);
+            // 正确计算总长度（28 字节固定头部 + 文件名字节数 + 数据长度）
+            int totalLength = 28 + fileNameBytes.Length + header.DataLength;
+            output.EnsureWritable(totalLength); // 确保缓冲区有足够的空间
 
-            output.WriteInt((int)header.Type);
-            output.WriteInt(fileNameBytes.Length);
-            output.WriteBytes(fileNameBytes);
-            output.WriteLong(header.FileSize);
-            output.WriteLong(header.Offset);
-            output.WriteInt(header.DataLength);
+            // 写入固定头部
+            output.WriteInt((int)header.Type);           // 4 字节
+            output.WriteInt(fileNameBytes.Length);        // 4 字节（文件名长度）
+            output.WriteBytes(fileNameBytes);             // 文件名字节数
+            output.WriteLong(header.FileSize);           // 8 字节
+            output.WriteLong(header.Offset);             // 8 字节
+            output.WriteInt(header.DataLength);          // 4 字节
 
-            // 安全写入数据
-            if (header.DataLength > 0 && message.Data != null )
+            // 写入数据部分
+            if (header.DataLength > 0 && message.Data != null && message.Data.Length >= header.DataLength)
             {
-                // 使用更安全的写入方式
                 output.WriteBytes(message.Data, 0, header.DataLength);
+            }
+            else if (header.DataLength > 0)
+            {
+                throw new InvalidDataException("数据长度不匹配");
             }
         }
     }
 
     public class FileChunkMessageDecoder : ByteToMessageDecoder
     {
-        private const int FixedHeaderSize = 24; // Type(4) + FileNameLen(4) + FileSize(8) + Offset(8) + DataLen(4)
+        private const int FixedHeaderSize = 28; // Type(4) + FileNameLen(4) + FileSize(8) + Offset(8) + DataLen(4)
         private const int MaxFileNameLength = 1024; // 文件名最大长度限制
         private const int MaxChunkSize = 1024 * 1024; // 最大分片大小 (1MB)
 
         protected override void Decode(IChannelHandlerContext context, IByteBuffer input, List<object> output)
         {
-            // 步骤1: 确保有足够数据读取固定头部
-            if (input.ReadableBytes < FixedHeaderSize)
+            // 步骤1: 确保有足够数据读取固定头部（Type + FileNameLength）
+            if (input.ReadableBytes < 8) // 至少需要读取 Type(4) + FileNameLength(4)
                 return;
 
-            // 标记读取位置以便回退
-            input.MarkReaderIndex();
+            input.MarkReaderIndex(); // 标记读取位置
 
             // 读取固定头部
             var type = (MessageType)input.ReadInt();
@@ -72,7 +75,13 @@ namespace Assi.DotNetty.FileTransmission
             // 读取文件名
             string fileName = input.ReadString(fileNameLength, Encoding.UTF8);
 
-            // 读取剩余头部
+            // 步骤3: 确保有足够数据读取剩余头部（FileSize, Offset, DataLength）
+            if (input.ReadableBytes < 8 + 8 + 4)
+            {
+                input.ResetReaderIndex();
+                return;
+            }
+
             long fileSize = input.ReadLong();
             long offset = input.ReadLong();
             int dataLength = input.ReadInt();
@@ -84,7 +93,7 @@ namespace Assi.DotNetty.FileTransmission
                 throw new InvalidDataException($"Invalid data length: {dataLength}");
             }
 
-            // 步骤3: 确保有足够数据读取分片内容
+            // 步骤4: 确保有足够数据读取分片内容
             if (input.ReadableBytes < dataLength)
             {
                 input.ResetReaderIndex();
