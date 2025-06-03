@@ -182,6 +182,8 @@ namespace Assi.DotNetty.FileTransmission
     {
         FileRequest,     // 客户端上传请求
         FileChunk,       // 文件分块
+        UploadRequest,   // 新增：上传请求
+        UploadChunk,     // 新增：上传分块
         Ack,             // 确认
         Cancel,          // 取消
         Complete,        // 完成

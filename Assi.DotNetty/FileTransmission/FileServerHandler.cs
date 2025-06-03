@@ -14,11 +14,12 @@ namespace Assi.DotNetty.FileTransmission
     public class FileServerHandler : SimpleChannelInboundHandler<FileChunkMessage>
     {
         private readonly string _fileDirectory;
-        private readonly ConcurrentDictionary<IChannel, ClientTransferState> _transfers = new();
+        private readonly ServerStateManager _stateManager;
 
-        public FileServerHandler(string fileDirectory)
+        public FileServerHandler(string fileDirectory, ServerStateManager stateManager)
         {
             _fileDirectory = fileDirectory;
+            _stateManager = stateManager;
         }
 
         protected override void ChannelRead0(IChannelHandlerContext context, FileChunkMessage message)
@@ -36,6 +37,12 @@ namespace Assi.DotNetty.FileTransmission
                     break;
                 case MessageType.Cancel:
                     HandleCancel(channel, header);
+                    break;
+                case MessageType.UploadRequest:
+                    HandleUploadRequest(channel, header);
+                    break;
+                case MessageType.UploadChunk:
+                    HandleUploadChunk(channel, message);
                     break;
                 default:
                     Console.WriteLine($"未知消息类型: {header.Type}");
@@ -75,20 +82,15 @@ namespace Assi.DotNetty.FileTransmission
                 transfer.FileStream.Seek(header.Offset, SeekOrigin.Begin);
             }
 
-            // 直接尝试添加，无需手动检查
-            if (_transfers.TryAdd(channel, transfer))
-            {
-                SendNextChunk(channel, transfer);
-            }
-            else
-            {
-                Console.WriteLine("客户端已存在传输任务");
-            }
+            // 注册到全局状态管理器
+            _stateManager.AddTransfer(channel, transfer);
+            SendNextChunk(channel, transfer);
         }
 
         private void HandleAck(IChannel channel, FileMessageHeader header)
         {
-            if (!_transfers.TryGetValue(channel, out var transfer)) return;
+            ClientTransferState transfer = _stateManager.GetTransfer(channel);
+            if (transfer == default) return;
             transfer.UpdateOffset(header.Offset + header.DataLength, header.DataLength);
             if (transfer.CurrentOffset >= transfer.TotalSize)
             {
@@ -101,6 +103,8 @@ namespace Assi.DotNetty.FileTransmission
                         FileName = transfer.FileName
                     }
                 });
+                // 传输完成时移除
+                _stateManager.RemoveTransfer(channel);
                 return;
             }
             SendNextChunk(channel, transfer);
@@ -108,13 +112,7 @@ namespace Assi.DotNetty.FileTransmission
 
         private void HandleCancel(IChannel channel, FileMessageHeader header)
         {
-            if (_transfers.TryGetValue(channel, out var transfer))
-            {
-                transfer.Status = TransferStatus.Interrupted;
-                transfer.Dispose();
-                ClientTransferState cts;
-                _transfers.TryRemove(channel,out cts);
-            }
+            _stateManager.RemoveTransfer(channel);
         }
 
         private void SendNextChunk(IChannel channel, ClientTransferState transfer)
@@ -160,20 +158,67 @@ namespace Assi.DotNetty.FileTransmission
         public override void ChannelInactive(IChannelHandlerContext context)
         {
             var channel = context.Channel;
-            if (_transfers.TryGetValue(channel, out var transfer))
-            {
-                transfer.Status = TransferStatus.Interrupted;
-                transfer.Dispose();
-                ClientTransferState cts;
-                _transfers.TryRemove(channel, out cts);
-            }
+            _stateManager.RemoveTransfer(channel);
             base.ChannelInactive(context);
         }
 
         public override void ExceptionCaught(IChannelHandlerContext context, Exception exception)
         {
-            Console.WriteLine($"异常: {exception.Message}");
-            context.CloseAsync();
+            // 异常时强制移除
+            _stateManager.RemoveTransfer(context.Channel);
+            base.ExceptionCaught(context, exception);
+        }
+
+        private void HandleUploadRequest(IChannel channel, FileMessageHeader header)
+        {
+            var filePath = Path.Combine(_fileDirectory, header.FileName);
+            var transfer = new ClientTransferState(header.FileName, header.FileSize)
+            {
+                Ip = channel.RemoteAddress.ToString(),
+                FileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write),
+                Status = TransferStatus.Uploading
+            };
+
+            if (header.Offset > 0 && File.Exists(filePath))
+            {
+                transfer.CurrentOffset = header.Offset;
+                transfer.FileStream.Seek(header.Offset, SeekOrigin.Begin);
+            }
+
+            _stateManager.AddTransfer(channel,transfer);
+            Console.WriteLine($"开始接收文件: {header.FileName} ({header.FileSize} 字节)");
+        }
+
+        private void HandleUploadChunk(IChannel channel, FileChunkMessage msg)
+        {
+            ClientTransferState transfer = _stateManager.GetTransfer(channel);
+            if (transfer == null || transfer.Status != TransferStatus.Uploading)
+                return;
+
+            if (transfer.IsOffsetValid(msg.Header.Offset))
+            {
+                transfer.FileStream.Write(msg.Data, 0, msg.Header.DataLength);
+                transfer.UpdateOffset(msg.Header.Offset + msg.Header.DataLength, msg.Header.DataLength);
+
+                // 发送确认
+                channel.WriteAndFlushAsync(new FileChunkMessage
+                {
+                    Header = new FileMessageHeader
+                    {
+                        Type = MessageType.Ack,
+                        FileName = msg.Header.FileName,
+                        Offset = msg.Header.Offset + msg.Header.DataLength,
+                        DataLength = msg.Header.DataLength
+                    },
+                    Data = new byte[0]
+                });
+
+                if (transfer.CurrentOffset >= transfer.TotalSize)
+                {
+                    transfer.Status = TransferStatus.Completed;
+                    Console.WriteLine($"{msg.Header.FileName} 接收完成");
+                }
+            }
         }
     }
 }

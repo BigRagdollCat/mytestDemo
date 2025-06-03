@@ -10,6 +10,7 @@ namespace Assi.DotNetty.FileTransmission
 {
     public class FileClientHandler : SimpleChannelInboundHandler<FileChunkMessage>
     {
+        private IChannel _channel; // 保存连接通道
         private readonly ClientTransferState _transfer;
         private readonly string _localFilePath;
 
@@ -29,7 +30,7 @@ namespace Assi.DotNetty.FileTransmission
                     ReceiveFileChunk(context, header, message.Data);
                     break;
                 case MessageType.Complete:
-                    HandleTransferComplete();
+                    HandleTransferComplete(context);
                     break;
                 case MessageType.Cancel:
                     HandleTransferCancelled();
@@ -79,11 +80,14 @@ namespace Assi.DotNetty.FileTransmission
             Console.WriteLine($"已接收: {header.DataLength} 字节，进度: {_transfer.GetProgressPercentage():F2}%");
         }
 
-        private void HandleTransferComplete()
+        private void HandleTransferComplete(IChannelHandlerContext context)
         {
             _transfer.Status = TransferStatus.Completed;
             _transfer.Dispose();
             Console.WriteLine("文件接收完成！");
+            
+            // 主动关闭客户端通道
+            context.Channel.CloseAsync();
         }
 
         private void HandleTransferCancelled()
@@ -98,5 +102,6 @@ namespace Assi.DotNetty.FileTransmission
             _transfer.Dispose();
             context.CloseAsync();
         }
+
     }
 }
