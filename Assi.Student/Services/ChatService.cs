@@ -1,9 +1,11 @@
 ﻿using Assi.DotNetty.ChatTransmission;
+using Assi.DotNetty.ScreenTransmission;
 using Assi.Services;
 using Assi.Student.Models;
 using Assi.Student.ViewModels;
 using Assi.Student.Views;
 using Avalonia.Threading;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -18,6 +20,23 @@ namespace Assi.Student.Services
         public ConcurrentQueue<ChatInfoModel<object>> SystemChatInfoQue { get; set; } = new ConcurrentQueue<ChatInfoModel<object>>();
         public ConcurrentQueue<ChatInfoModel<object>> MessageChatinfoQue { get; set; } = new ConcurrentQueue<ChatInfoModel<object>>();
         public VoideService VoideService { get; set; }
+
+        public ScreenRecorder recorder = new ScreenRecorder();
+
+        public ChatService() 
+        {
+            recorder.OnEncodedFrame += async data =>
+            {
+                Console.WriteLine($"Received encoded frame, size: {data.Length} bytes");
+                await App.Current.Services.GetService<VideoBroadcastServer>().BroadcastFrameAsync(data, 10089);
+            };
+
+            // 订阅错误事件
+            recorder.OnEncodingError += ex =>
+            {
+                Console.WriteLine($"Encoding error: {ex.Message}");
+            };
+        }
 
         public async void ChatRun(ChatInfoModel<object> cinfo)
         {
@@ -62,6 +81,24 @@ namespace Assi.Student.Services
                     {
                         Dispatcher.UIThread.Post(() => MainWindow.PlayerView.IsVisible = false);
                     }
+                    break;
+                case "_client_desktop":
+                    if ((bool)cinfo.Body)
+                    {
+                        recorder.Start(MainWindow.Width, MainWindow.Height);
+                    }
+                    else
+                    {
+                        recorder.Stop();
+                        recorder.Dispose();
+                    }
+                    await App.Current.Services.GetService<EnhancedChatServer>().BroadcastAsync(new ChatInfoModel<bool>()
+                    {
+                        MsgType = MsgType.System,
+                        Message = "_client_desktop",
+                        SendTimeSpan = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                        Body = (bool)cinfo.Body
+                    },8099);
                     break;
                 default:
                     break;

@@ -71,7 +71,7 @@ namespace Assi.Server
                 {
                     return new VideoBroadcastServer(10099, Environment.ProcessorCount);
                 });
-                services.AddSingleton<VoideService>();
+                services.AddSingleton<AssiVoideService>();
 
                 // 注册其他服务...
                 services.AddHostedService<WorkBackgroundService>();
@@ -103,6 +103,7 @@ namespace Assi.Server
                 {
                     WorkBackgroundService backgroundService = (WorkBackgroundService)Services.GetRequiredService<IHostedService>();
                     backgroundService.OnChatInfo += Services.GetRequiredService<ChatService>().ChatRun;
+                    backgroundService.OnVideo += Services.GetRequiredService<AssiVoideService>().VoideRun;
                     // 获取并启动 HostedService
                     backgroundService.StartAsync(CancellationToken.None);
 

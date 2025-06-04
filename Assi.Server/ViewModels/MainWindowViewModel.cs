@@ -175,10 +175,19 @@ namespace Assi.Server.ViewModels
         #endregion
 
         #region 学生演示
-        public ICommand StudentDemonstrationCommand { get; }
-        private void StudentDemonstration()
-        {
 
+        public bool IsStudentRecorder { get; set; } = false;
+        public ICommand StudentDemonstrationCommand { get; }
+        private async void StudentDemonstration()
+        {
+            IsStudentRecorder = !IsStudentRecorder;
+            await App.Current.Services.GetService<EnhancedChatServer>().BroadcastAsync(new ChatInfoModel<object>()
+            {
+                MsgType = MsgType.System,
+                Message = "_client_desktop",
+                SendTimeSpan = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                Body = IsStudentRecorder
+            }, 8089);
         }
         #endregion
 

@@ -1,5 +1,7 @@
 ﻿using Assi.DotNetty.ChatTransmission;
 using Assi.Server.ViewModels;
+using Assi.Server.Views;
+using Avalonia.Threading;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -43,6 +45,17 @@ namespace Assi.Server.Services
                     break;
                 case "_search_client":
                     SearchClientService.FindNewClient(cinfo);
+                    break;
+                case "_client_desktop":
+                    if ((bool)cinfo.Body)
+                    {
+                        // 在 UI 线程上开始作业并立即返回。
+                        Dispatcher.UIThread.Post(() => MainWindow.PlayerView.Show());
+                    }
+                    else
+                    {
+                        Dispatcher.UIThread.Post(() => MainWindow.PlayerView.IsVisible = false);
+                    }
                     break;
                 default:
                     break;

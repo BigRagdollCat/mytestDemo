@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace Assi.Server.Services
 {
+
     public class WorkBackgroundService : BackgroundService
     {
         private readonly EnhancedChatServer _enhancedChatServer;
@@ -23,28 +24,15 @@ namespace Assi.Server.Services
         {
             _enhancedChatServer = enhancedChatServer;
             _videoBroadcastServer = videoBroadcastServer;
-            OnChatInfo += CanRun;
-            OnVideo += CanRun2;
-        }
-
-        public void CanRun(ChatInfoModel<object> chatInfo)
-        {
-
-        }
-
-        public void CanRun2(byte[] bytes) 
-        {
-
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {   
-            // 启动UDP服务
+        {   // 启动UDP服务
             await _enhancedChatServer.StartAsync(OnChatInfo);
             await _videoBroadcastServer.StartAsync(OnVideo);
-
             // 等待停止信号
             stoppingToken.Register(() => _enhancedChatServer.StopAsync());
+            stoppingToken.Register(() => _videoBroadcastServer.StopAsync());
             stoppingToken.WaitHandle.WaitOne();
         }
 
@@ -52,6 +40,7 @@ namespace Assi.Server.Services
         {
             // 停止UDP服务
             await _enhancedChatServer.StopAsync();
+            await _videoBroadcastServer.StopAsync();
             await base.StopAsync(cancellationToken);
         }
     }

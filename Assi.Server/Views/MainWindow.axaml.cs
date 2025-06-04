@@ -1,3 +1,4 @@
+using Assi.Server.ViewModels;
 using Avalonia.Controls;
 
 namespace Assi.Server.Views
@@ -6,9 +7,17 @@ namespace Assi.Server.Views
     {
         public static int Width { get; set; }
         public static int Height { get; set; }
+        public static PlayerView PlayerView { get; set; }
         public MainWindow()
         {
             InitializeComponent();
+            if (PlayerView == null)
+            {
+                PlayerView = new PlayerView()
+                {
+                    DataContext = PlayerViewModel.Instance
+                };
+            }
             this.Loaded += MainWindow_Loaded;
         }
 
