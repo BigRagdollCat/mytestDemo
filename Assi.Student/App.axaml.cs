@@ -33,6 +33,7 @@ namespace Assi.Student
         private Bitmap _iconNormal = LocalService.LoadFromResource(new Uri("avares://Assi.Student/Resources/assiLogo.png"));
         private Bitmap _iconAlternate = LocalService.LoadFromResource(new Uri("avares://Assi.Student/Resources/NotiyNull.png"));
         private int _iconIndex = 0;
+        public TopLevel MainTopLevel { get; private set; }
 
         /// <summary>
         /// Gets the <see cref="IServiceProvider"/> instance to resolve application services.
@@ -120,10 +121,12 @@ namespace Assi.Student
                 // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
                 // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
                 DisableAvaloniaDataAnnotationValidation();
-                desktop.MainWindow = new MainWindow
+                var mainWindows = new MainWindow
                 {
                     DataContext = new MainWindowViewModel()
                 };
+                desktop.MainWindow = mainWindows;
+                MainTopLevel = TopLevel.GetTopLevel(mainWindows);
             }
 
             base.OnFrameworkInitializationCompleted();
@@ -172,6 +175,10 @@ namespace Assi.Student
         private void NativeMenuItem_Click(object? sender, System.EventArgs e)
         {
             System.Environment.Exit(0);
+        }
+        private void NativeMenuItem_Click_1(object? sender, System.EventArgs e)
+        {
+
         }
     }
 }

@@ -1,5 +1,7 @@
 using Assi.Server.ViewModels;
 using Avalonia.Controls;
+using Avalonia.Input;
+using System;
 
 namespace Assi.Server.Views
 {
@@ -51,6 +53,17 @@ namespace Assi.Server.Views
             else
             {
                 this.AddGroupBtn.IsVisible = false;
+            }
+        }
+        private void OnListBoxItemDoubleClicked(object sender, PointerPressedEventArgs e)
+        {
+            if (e.ClickCount == 2 && sender is ListBoxItem item)
+            {
+                // 获取选中项的数据上下文
+                var selectedItem = item.DataContext;
+
+                // 处理双击逻辑
+                Console.WriteLine($"双击了: {selectedItem}");
             }
         }
     }

@@ -22,13 +22,14 @@ namespace Assi.Student.Services
         public VoideService VoideService { get; set; }
 
         public ScreenRecorder recorder = new ScreenRecorder();
+        FileClientService fcs;
 
         public ChatService() 
         {
             recorder.OnEncodedFrame += async data =>
             {
                 Console.WriteLine($"Received encoded frame, size: {data.Length} bytes");
-                await App.Current.Services.GetService<VideoBroadcastServer>().BroadcastFrameAsync(data, 10089);
+                await App.Current.Services.GetService<VideoBroadcastServer>().BroadcastFrameAsync(data, 10099);
             };
 
             // 订阅错误事件
@@ -68,8 +69,20 @@ namespace Assi.Student.Services
                     CloseClientService.CloseClient();
                     break;
                 case "_file_upload":
-                    FileClientService fcs = new FileClientService(cinfo.Ip);
-                    fcs.Start(cinfo.Body.ToString());
+                    if (fcs == null)
+                    {
+                        fcs = new FileClientService(cinfo.Ip);
+                        fcs.Start(cinfo.Body.ToString());
+                    }
+                    else
+                    {
+                        if (fcs.IsRun)
+                        {
+                            fcs.Stop();
+                        }
+                        fcs = new FileClientService(cinfo.Ip);
+                        fcs.Start(cinfo.Body.ToString());
+                    }
                     break;
                 case "_server_desktop":
                     if ((bool)cinfo.Body)
@@ -83,6 +96,13 @@ namespace Assi.Student.Services
                     }
                     break;
                 case "_client_desktop":
+                    await App.Current.Services.GetService<EnhancedChatServer>().BroadcastAsync(new ChatInfoModel<object>()
+                    {
+                        MsgType = MsgType.System,
+                        Message = "_client_desktop",
+                        SendTimeSpan = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                        Body = (bool)cinfo.Body
+                    }, 8099);
                     if ((bool)cinfo.Body)
                     {
                         recorder.Start(MainWindow.Width, MainWindow.Height);
@@ -92,28 +112,45 @@ namespace Assi.Student.Services
                         recorder.Stop();
                         recorder.Dispose();
                     }
-                    await App.Current.Services.GetService<EnhancedChatServer>().BroadcastAsync(new ChatInfoModel<bool>()
+                    break;
+                case "_file_download":
+                    if (fcs == null)
                     {
-                        MsgType = MsgType.System,
-                        Message = "_client_desktop",
-                        SendTimeSpan = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                        Body = (bool)cinfo.Body
-                    },8099);
+                        fcs = new FileClientService(cinfo.Ip);
+                        fcs.UploadStart();
+                    }
+                    else
+                    {
+                        if (fcs.IsRun)
+                        {
+                            fcs.Stop();
+                        }
+                        fcs = new FileClientService(cinfo.Ip);
+                        fcs.UploadStart();
+                    }
                     break;
                 default:
                     break;
             }
         }
-
+        LockWindow LW;
         public void CloseDeskTop(bool body)
         {
             if (body)
             {
+                if (LW == null)
+                {
+                    Dispatcher.UIThread.Post(() => LW = new LockWindow());
+                }
+
                 LocalService.LockRun();
+                Dispatcher.UIThread.Post(() => LW.Show());
             }
             else
             {
                 LocalService.UnLockRun();
+                Dispatcher.UIThread.Post(() => LW.IsVisible = false);
+               
             }
         }
     }

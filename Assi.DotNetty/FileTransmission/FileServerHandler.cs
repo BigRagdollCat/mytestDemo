@@ -171,6 +171,10 @@ namespace Assi.DotNetty.FileTransmission
 
         private void HandleUploadRequest(IChannel channel, FileMessageHeader header)
         {
+            if (!Directory.Exists(_fileDirectory))
+            {
+                Directory.CreateDirectory(_fileDirectory);
+            }
             var filePath = Path.Combine(_fileDirectory, header.FileName);
             var transfer = new ClientTransferState(header.FileName, header.FileSize)
             {
@@ -187,6 +191,17 @@ namespace Assi.DotNetty.FileTransmission
 
             _stateManager.AddTransfer(channel,transfer);
             Console.WriteLine($"开始接收文件: {header.FileName} ({header.FileSize} 字节)");
+
+            // 发送确认
+            channel.WriteAndFlushAsync(new FileChunkMessage
+            {
+                Header = new FileMessageHeader
+                {
+                    Type = MessageType.Ack,
+                    FileName = header.FileName,
+                    Offset = 0,
+                },
+            });
         }
 
         private void HandleUploadChunk(IChannel channel, FileChunkMessage msg)
@@ -195,29 +210,39 @@ namespace Assi.DotNetty.FileTransmission
             if (transfer == null || transfer.Status != TransferStatus.Uploading)
                 return;
 
-            if (transfer.IsOffsetValid(msg.Header.Offset))
-            {
-                transfer.FileStream.Write(msg.Data, 0, msg.Header.DataLength);
-                transfer.UpdateOffset(msg.Header.Offset + msg.Header.DataLength, msg.Header.DataLength);
+            transfer.FileStream.Write(msg.Data, 0, msg.Header.DataLength);
+            // 添加强制刷新
+            transfer.FileStream.Flush();
+            transfer.UpdateOffset(msg.Header.Offset + msg.Header.DataLength, msg.Header.DataLength);
 
-                // 发送确认
+            // 发送确认
+            channel.WriteAndFlushAsync(new FileChunkMessage
+            {
+                Header = new FileMessageHeader
+                {
+                    Type = MessageType.Ack,
+                    FileName = msg.Header.FileName,
+                    Offset = msg.Header.Offset + msg.Header.DataLength,
+                },
+            });
+
+            if (transfer.CurrentOffset >= transfer.TotalSize)
+            {
+                transfer.Status = TransferStatus.Completed;
+                Console.WriteLine($"{msg.Header.FileName} 接收完成");
+
+                // 新增完成处理
                 channel.WriteAndFlushAsync(new FileChunkMessage
                 {
                     Header = new FileMessageHeader
                     {
-                        Type = MessageType.Ack,
-                        FileName = msg.Header.FileName,
-                        Offset = msg.Header.Offset + msg.Header.DataLength,
-                        DataLength = msg.Header.DataLength
-                    },
-                    Data = new byte[0]
+                        Type = MessageType.Complete,
+                        FileName = msg.Header.FileName
+                    }
                 });
 
-                if (transfer.CurrentOffset >= transfer.TotalSize)
-                {
-                    transfer.Status = TransferStatus.Completed;
-                    Console.WriteLine($"{msg.Header.FileName} 接收完成");
-                }
+                // 关键：移除状态管理
+                _stateManager.RemoveTransfer(channel);
             }
         }
     }

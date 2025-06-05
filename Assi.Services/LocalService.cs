@@ -61,7 +61,6 @@ namespace Assi.Services
                 CloseHandle(hProcess);
             }
         }
-
         public static void UnLockRun()
         {
             //this.lockWindow.Visibility = Visibility.Collapsed;
@@ -71,7 +70,6 @@ namespace Assi.Services
 
         public static void LockRun()
         {
-            //his.lockWindow.Show();
             _keyboardHook.StartHook();
             SuspendWinLogon();
         }

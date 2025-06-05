@@ -255,9 +255,24 @@ namespace Assi.Server.ViewModels
 
         #region 收取文件
         public ICommand ReceiveFilesCommand { get; }
-        public void ReceiveFiles()
+        public async void ReceiveFiles()
         {
-
+            if (fileServer != null && fileServer.IsRun == true)
+            {
+                await fileServer.Stop();
+            }
+            else
+            {
+                string path = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory,"download");
+                fileServer = new FileServer(path);
+                fileServer.Start();
+                await App.Current.Services.GetService<EnhancedChatServer>().BroadcastAsync(new ChatInfoModel<string>()
+                {
+                    MsgType = MsgType.System,
+                    Message = "_file_download",
+                    SendTimeSpan = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                }, 8089);
+            }
         }
         #endregion
 
@@ -290,7 +305,7 @@ namespace Assi.Server.ViewModels
         }
         #endregion
 
-        #region 备份还原
+        #region 客户端搜索
         public ICommand SearchClientCommand { get; }
         public async void SearchClient()
         {

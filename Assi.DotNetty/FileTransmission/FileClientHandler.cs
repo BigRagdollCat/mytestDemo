@@ -13,6 +13,8 @@ namespace Assi.DotNetty.FileTransmission
         private IChannel _channel; // 保存连接通道
         private readonly ClientTransferState _transfer;
         private readonly string _localFilePath;
+        // ====== 新增事件 ======
+        public Action<FileMessageHeader> OnAckReceived;
 
         public FileClientHandler(string fileName, long fileSize, string savePath)
         {
@@ -34,6 +36,10 @@ namespace Assi.DotNetty.FileTransmission
                     break;
                 case MessageType.Cancel:
                     HandleTransferCancelled();
+                    break;
+                case MessageType.Ack:
+                    // 触发事件
+                    OnAckReceived?.Invoke(header);
                     break;
                 default:
                     Console.WriteLine($"未知消息类型: {header.Type}");
@@ -102,6 +108,7 @@ namespace Assi.DotNetty.FileTransmission
             _transfer.Dispose();
             context.CloseAsync();
         }
+
 
     }
 }

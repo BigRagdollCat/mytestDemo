@@ -1,0 +1,17 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" Width="1" Height="1"
+        x:Class="Assi.Student.LockWindow"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="LockWindow"
+		CanResize="False"
+		WindowState="Maximized"
+		ExtendClientAreaToDecorationsHint="True"
+		ExtendClientAreaChromeHints="NoChrome"
+		ExtendClientAreaTitleBarHeightHint="-1">
+	<Grid Background="Black">
+		
+	</Grid>
+</Window>

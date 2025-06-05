@@ -16,7 +16,6 @@ using global::DotNetty.Transport.Channels.Groups;
 
 namespace Assi.DotNetty.FileTransmission
 {
-
     public class EnhancedFileServer : IDisposable
     {
         private readonly int _port;

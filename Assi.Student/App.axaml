@@ -27,6 +27,7 @@
 					  ToolTipText="学生机">
 				<TrayIcon.Menu>
 					<NativeMenu>
+						<NativeMenuItem Header="上传文件" Click="NativeMenuItem_Click_1"/>
 						<NativeMenuItem Header="Close" Click="NativeMenuItem_Click"/>
 					</NativeMenu>
 				</TrayIcon.Menu>
