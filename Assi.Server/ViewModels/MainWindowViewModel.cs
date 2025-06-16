@@ -60,7 +60,6 @@ namespace Assi.Server.ViewModels
         }
         #endregion
 
-
         public MainWindowViewModel()
         {
             #region Command
