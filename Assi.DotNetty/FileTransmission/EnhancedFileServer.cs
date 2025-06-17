@@ -55,8 +55,9 @@ namespace Assi.DotNetty.FileTransmission
                      }))
                      .ChildOption(ChannelOption.SoKeepalive, true);
 
-            _serverChannel = await bootstrap.BindAsync(_port);
+            _serverChannel = await bootstrap.BindAsync(IPAddress.Any,_port);
             Console.WriteLine($"文件服务器已启动，监听端口 {_port}");
+            _isRunning = true;
             //await _serverChannel.CloseCompletion;
             // 关键修改：启动后台任务等待关闭信号
             _ = Task.Run(async () => {
@@ -66,7 +67,7 @@ namespace Assi.DotNetty.FileTransmission
         }
 
         public async Task StopAsync()
-        {
+         {
             if (!_isRunning) return;
             _isRunning = false;
             try

@@ -170,8 +170,6 @@ namespace Assi.DotNetty.FileTransmission
             // 发送上传请求后等待初始ACK
             await SendChunkAndWaitForAck(_channel, request, ct);
 
-            OpenTerminalService.OpenTerminal("请求上传成功");
-
             const int chunkSize = 8192;
             using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 8192, FileOptions.Asynchronous);
             byte[] buffer = new byte[chunkSize];
@@ -194,10 +192,8 @@ namespace Assi.DotNetty.FileTransmission
                     Data = buffer.Take(bytesRead).ToArray()
                 };
 
-                OpenTerminalService.OpenTerminal("准备上传分片");
                 // 使用封装好的方法发送并等待确认
                 await SendChunkAndWaitForAck(_channel, chunk, ct);
-                OpenTerminalService.OpenTerminal("上传分片成功");
                 currentOffset += bytesRead;
                 OnUploadProgress(currentOffset, fileInfo.Length);
             }

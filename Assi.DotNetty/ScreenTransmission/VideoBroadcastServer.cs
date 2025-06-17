@@ -28,7 +28,7 @@ namespace Assi.DotNetty.ScreenTransmission
         public VideoBroadcastServer(int port, int broadcastPort, int threadCount = 1)
         {
             // 初始化广播地址
-            _broadcastAddress = new IPEndPoint(IPAddress.Parse("255.255.255.255"), port);
+            _broadcastAddress = new IPEndPoint(IPAddress.Parse("192.168.9.255"), port);
             _port = port;
             _broadcastPort = broadcastPort;
             _group = new MultithreadEventLoopGroup(threadCount);
@@ -91,7 +91,7 @@ namespace Assi.DotNetty.ScreenTransmission
 
                 var byteBuffer = Unpooled.CopiedBuffer(packetData);
                 // 使用受限广播地址
-                var broadcastAddress = new IPEndPoint(IPAddress.Parse("255.255.255.255"), port);
+                var broadcastAddress = new IPEndPoint(IPAddress.Parse("192.168.9.255"), port);
                 var datagramPacket = new DatagramPacket(byteBuffer, broadcastAddress);
 
                 try

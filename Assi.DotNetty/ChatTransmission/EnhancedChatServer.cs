@@ -99,7 +99,7 @@ namespace Assi.DotNetty.ChatTransmission
                 var byteBuffer = Unpooled.CopiedBuffer(msg, Encoding.UTF8);
 
                 // 使用受限广播地址
-                var broadcastAddress = new IPEndPoint(IPAddress.Parse("255.255.255.255"), port);
+                var broadcastAddress = new IPEndPoint(IPAddress.Parse("192.168.9.255"), port);
                 var datagramPacket = new DatagramPacket(byteBuffer, broadcastAddress);
 
                 await _channel.WriteAndFlushAsync(datagramPacket);

@@ -211,12 +211,14 @@ namespace Assi.Server.ViewModels
 
         private async void Distribute()
         {
-            if (fileServer != null && fileServer.IsRun == true)
+            try
             {
-                await fileServer.Stop();
-            }
-            else
-            {
+                if (fileServer != null && fileServer.IsRun == true)
+                {
+                    await fileServer.Stop();
+                    fileServer.IsRun = false;
+                }
+
                 var topLevel = TopLevel.GetTopLevel(App.Current.MainTopLevel);
                 var storageProvider = topLevel.StorageProvider;
 
@@ -237,6 +239,7 @@ namespace Assi.Server.ViewModels
 
                     fileServer = new FileServer(parentDir);
 
+                    fileServer.IsRun = true;
                     fileServer.Start();
 
 
@@ -249,6 +252,10 @@ namespace Assi.Server.ViewModels
                     }, 8089);
                 }
             }
+            catch (Exception ex)
+            {
+
+            }
         }
         #endregion
 
@@ -259,19 +266,18 @@ namespace Assi.Server.ViewModels
             if (fileServer != null && fileServer.IsRun == true)
             {
                 await fileServer.Stop();
+                fileServer.IsRun = false;
             }
-            else
+
+            string path = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "download");
+            fileServer = new FileServer(path);
+            fileServer.Start();
+            await App.Current.Services.GetService<EnhancedChatServer>().BroadcastAsync(new ChatInfoModel<string>()
             {
-                string path = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory,"download");
-                fileServer = new FileServer(path);
-                fileServer.Start();
-                await App.Current.Services.GetService<EnhancedChatServer>().BroadcastAsync(new ChatInfoModel<string>()
-                {
-                    MsgType = MsgType.System,
-                    Message = "_file_download",
-                    SendTimeSpan = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
-                }, 8089);
-            }
+                MsgType = MsgType.System,
+                Message = "_file_download",
+                SendTimeSpan = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+            }, 8089);
         }
         #endregion
 
