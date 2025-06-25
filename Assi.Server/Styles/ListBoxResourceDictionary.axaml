@@ -36,16 +36,35 @@
 									   VerticalAlignment="Center" HorizontalAlignment="Center"/>
 						</Border>
 						<!-- 右侧菜单按钮 -->
-						<Button Width="24" Height="24" Background="Transparent"
+						<Button x:Name="menuButton" Width="24" Height="24" Background="Transparent"
 								VerticalAlignment="Top" HorizontalAlignment="Right"
-								Cursor="Hand">
+								Cursor="Hand"
+								Command="{Binding ToggleMenuCommand}">
+							<!--<Button.ContextMenu>
+								<ContextMenu x:Name="menuContext"
+									 IsOpen="{Binding IsMenuOpen, Mode=TwoWay}"
+									 PlacementTarget="{Binding ElementName=menuButton}"
+									 Placement="Bottom">
+									<MenuItem Header="文件管理器"/>
+								</ContextMenu>
+							</Button.ContextMenu>-->
 							<Canvas Width="18" Height="18">
-								<!-- 三个垂直圆点 -->
 								<Ellipse Canvas.Left="7" Canvas.Top="3" Width="4" Height="4" Fill="#C4C4C4"/>
 								<Ellipse Canvas.Left="7" Canvas.Top="9" Width="4" Height="4" Fill="#C4C4C4"/>
 								<Ellipse Canvas.Left="7" Canvas.Top="15" Width="4" Height="4" Fill="#C4C4C4"/>
 							</Canvas>
 						</Button>
+						<Popup x:Name="menuPopup"
+							   PlacementTarget="{Binding ElementName=menuButton}"
+							   Placement="Bottom"
+							   IsOpen="{Binding IsMenuOpen, Mode=TwoWay}">
+							<Border Background="#FFFFFF" BorderBrush="#ECEFF4" BorderThickness="1">
+								<StackPanel>
+									<MenuItem Header="选项1" Command="{Binding Option1Command}" />
+									<MenuItem Header="选项2" Command="{Binding Option2Command}" />
+								</StackPanel>
+							</Border>
+						</Popup>
 					</Grid>
 				</Border>
 			</ControlTemplate>

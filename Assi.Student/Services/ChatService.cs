@@ -6,6 +6,7 @@ using Assi.Student.ViewModels;
 using Assi.Student.Views;
 using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -127,6 +128,19 @@ namespace Assi.Student.Services
                         }
                         fcs = new FileClientService(cinfo.Ip);
                         fcs.UploadStart();
+                    }
+                    break;
+                case "_file_tree":
+                    var path = cinfo.Body.ToString();
+                    if (path != null && path != string.Empty)
+                    {
+                        await App.Current.Services.GetService<EnhancedChatServer>().SendMessageAsync(cinfo.Ip, 8099, new ChatInfoModel<string>()
+                        {
+                            MsgType = MsgType.System,
+                            Message = "_file_tree",
+                            SendTimeSpan = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                            Body = JsonConvert.SerializeObject(ExplorerService.GetExplorerEntity(path))
+                        });
                     }
                     break;
                 default:
