@@ -7,15 +7,32 @@
         x:Class="Assi.Server.AssiExplorer"
         x:DataType="vm:AssiExplorerViewModel"
         Title="AssiExplorer">
-	<ListBox ItemsSource="{Binding ExplorerEntityInfoList}">
-		<ListBox.ItemTemplate>
-			<DataTemplate>
-				<Grid ColumnDefinitions="10* 20* 30*">
-					<CheckBox IsChecked="{Binding IsChecked}"></CheckBox>
-					<TextBlock Grid.Column="1" Text="{Binding Name}"></TextBlock>
-					<TextBlock Grid.Column="2"  Text="{Binding ChangeTime ,StringFormat={}{0:yyyy-MM-dd}}"></TextBlock>
-				</Grid>
-			</DataTemplate>
-		</ListBox.ItemTemplate>
-	</ListBox>
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="*"/>
+		</Grid.ColumnDefinitions>
+		<ListBox Grid.Column="0" ItemsSource="{Binding ExplorerEntityInfoList}">
+			<ListBox.ItemTemplate>
+				<DataTemplate>
+					<Grid ColumnDefinitions="10* 20* 30*">
+						<CheckBox IsChecked="{Binding IsChecked}"></CheckBox>
+						<TextBlock Grid.Column="1" Text="{Binding Name}"></TextBlock>
+						<TextBlock Grid.Column="2"  Text="{Binding ChangeTime ,StringFormat={}{0:yyyy-MM-dd}}"></TextBlock>
+					</Grid>
+				</DataTemplate>
+			</ListBox.ItemTemplate>
+		</ListBox>
+		<ListBox Grid.Column="1" ItemsSource="{Binding ExplorerEntityInfoList}">
+			<ListBox.ItemTemplate>
+				<DataTemplate>
+					<Grid ColumnDefinitions="10* 20* 30*">
+						<CheckBox IsChecked="{Binding IsChecked}"></CheckBox>
+						<TextBlock Grid.Column="1" Text="{Binding Name}"></TextBlock>
+						<TextBlock Grid.Column="2"  Text="{Binding ChangeTime ,StringFormat={}{0:yyyy-MM-dd}}"></TextBlock>
+					</Grid>
+				</DataTemplate>
+			</ListBox.ItemTemplate>
+		</ListBox>
+	</Grid>
 </Window>
