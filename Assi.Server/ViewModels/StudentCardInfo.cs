@@ -31,7 +31,7 @@ namespace Assi.Server.ViewModels
             Mac = mac;
             Ip = ip;
             ToggleMenuCommand = new RelayCommand(ToggleMenu);
-            Option1Command = new RelayCommand(Option1);
+            Option1Command = new RelayCommand<StudentCard>(Option1);
             Option2Command = new RelayCommand(Option2);
         }
 
@@ -56,9 +56,9 @@ namespace Assi.Server.ViewModels
 
         #region 
         public ICommand Option1Command { get; }
-        public async void Option1()
+        public async void Option1(StudentCard student)
         {
-            AssiExplorer ae = new AssiExplorer();
+            AssiExplorer ae = new AssiExplorer(student);
             await ae.ShowDialog(App.Current.Services.GetRequiredService<IMainWindowService>().getMainWindow());
         }
         #endregion

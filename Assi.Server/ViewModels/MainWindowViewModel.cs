@@ -88,7 +88,7 @@ namespace Assi.Server.ViewModels
                 //sql.SaveChanges();
                 var group = sql.Groups.Select(grp => new Group(grp.Name,null)
                 {
-                    StudentCards = grp.Students.Select(std => new StudentCard(std.StudentIp,std.StudentCard.MAC)).ToList()
+                    StudentCards = grp.Students.Select(std => new StudentCard(std.StudentCard.MAC,std.StudentIp)).ToList()
                 }).ToList();
 
                 foreach (var item in group)
@@ -96,7 +96,7 @@ namespace Assi.Server.ViewModels
                     Groups.Add(item);
                 };
                 
-                var students = sql.StudentCards.Select(sdc => new StudentCard(sdc.Ip,sdc.MAC)).ToList();
+                var students = sql.StudentCards.Select(sdc => new StudentCard(sdc.MAC, sdc.Ip)).ToList();
                 for (int i = 0; i < students.Count; i++) 
                 {
                     students[i].ItemIndex = i;

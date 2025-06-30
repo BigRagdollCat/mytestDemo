@@ -8,10 +8,10 @@ namespace Assi.Server;
 public partial class AssiExplorer : Window
 {
     public AssiExplorerViewModel AEVM { get; set; }
-    public AssiExplorer()
+    public AssiExplorer(StudentCard student)
     {
         InitializeComponent();
-        AEVM = new AssiExplorerViewModel();
+        AEVM = new AssiExplorerViewModel(student);
         this.DataContext = AEVM;
     }
 

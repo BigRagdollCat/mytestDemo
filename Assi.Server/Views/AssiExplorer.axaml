@@ -7,32 +7,39 @@
         x:Class="Assi.Server.AssiExplorer"
         x:DataType="vm:AssiExplorerViewModel"
         Title="AssiExplorer">
+	<Interaction.Behaviors>
+		<EventTriggerBehavior EventName="Loaded">
+			<InvokeCommandAction Command="{Binding LoadCommand}" CommandParameter="{Binding}"/>
+		</EventTriggerBehavior>
+	</Interaction.Behaviors>
 	<Grid>
 		<Grid.ColumnDefinitions>
 			<ColumnDefinition Width="*"/>
 			<ColumnDefinition Width="*"/>
 		</Grid.ColumnDefinitions>
-		<ListBox Grid.Column="0" ItemsSource="{Binding ExplorerEntityInfoList}">
-			<ListBox.ItemTemplate>
-				<DataTemplate>
-					<Grid ColumnDefinitions="10* 20* 30*">
-						<CheckBox IsChecked="{Binding IsChecked}"></CheckBox>
-						<TextBlock Grid.Column="1" Text="{Binding Name}"></TextBlock>
-						<TextBlock Grid.Column="2"  Text="{Binding ChangeTime ,StringFormat={}{0:yyyy-MM-dd}}"></TextBlock>
-					</Grid>
-				</DataTemplate>
-			</ListBox.ItemTemplate>
-		</ListBox>
-		<ListBox Grid.Column="1" ItemsSource="{Binding ExplorerEntityInfoList}">
-			<ListBox.ItemTemplate>
-				<DataTemplate>
-					<Grid ColumnDefinitions="10* 20* 30*">
-						<CheckBox IsChecked="{Binding IsChecked}"></CheckBox>
-						<TextBlock Grid.Column="1" Text="{Binding Name}"></TextBlock>
-						<TextBlock Grid.Column="2"  Text="{Binding ChangeTime ,StringFormat={}{0:yyyy-MM-dd}}"></TextBlock>
-					</Grid>
-				</DataTemplate>
-			</ListBox.ItemTemplate>
-		</ListBox>
+		<Grid Grid.Column="0">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="4*"/>
+				<ColumnDefinition/>
+			</Grid.ColumnDefinitions>
+			<ListBox Grid.Column="1" ItemsSource="{Binding DisplayExplorerEntitys}">
+				<ListBox.ItemTemplate>
+					<DataTemplate>
+						<Grid ColumnDefinitions="10* 20* 30*" Background="Transparent">
+							<Interaction.Behaviors>
+								<EventTriggerBehavior EventName="DoubleTapped">
+									<InvokeCommandAction Command="{Binding ItemDoubleClickCommand}" CommandParameter="{Binding}"/>
+								</EventTriggerBehavior>
+							</Interaction.Behaviors>
+							<CheckBox IsChecked="{Binding IsChecked}"></CheckBox>
+							<TextBlock Grid.Column="1" Text="{Binding Name}"></TextBlock>
+							<TextBlock Grid.Column="2"  Text="{Binding ChangeTime ,StringFormat={}{0:yyyy-MM-dd}}"></TextBlock>
+						</Grid>
+					</DataTemplate>
+				</ListBox.ItemTemplate>
+			</ListBox>
+		</Grid>
+
 	</Grid>
 </Window>
