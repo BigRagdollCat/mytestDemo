@@ -7,53 +7,91 @@ using System.Threading.Tasks;
 namespace Assi.DotNetty.UdpFileTransmission
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
 
-    public class ClientTransferState : IDisposable
+    namespace Assi.DotNetty.UdpFileTransmission
     {
-        public Guid SessionId { get; set; }
-        public string BasePath { get; set; }
-        public bool IsDirectory { get; set; }
-        public string FileName { get; set; }
-        public string RelativePath { get; set; }
-        public long FileSize { get; set; }
-        public long Transferred { get; set; }
-        public TransferStatus Status { get; set; } = TransferStatus.Pending;
-        public FileStream FileStream { get; set; }
-
-        public ClientTransferState(string path)
+        public class ClientTransferState : IDisposable
         {
-            IsDirectory = Directory.Exists(path);
-            BasePath = path;
-            SessionId = Guid.NewGuid();
-            if (IsDirectory) InitializeDirectoryItems(path);
-            else InitializeFileItem(path);
+            public Guid SessionId { get; set; }
+            public string BasePath { get; set; }
+            public bool IsDirectory { get; set; }
+            public string FileName { get; set; }
+            public Guid DirID { get; set; } // 当前文件所属的目录ID
+            public long FileSize { get; set; }
+            public long Transferred { get; set; }
+            public TransferStatus Status { get; set; } = TransferStatus.Pending;
+            public FileStream FileStream { get; set; }
+            public List<FileItem> FileItems { get; } = new List<FileItem>();
+            public DirectoryNode DirectoryRoot { get; set; }
+
+            public ClientTransferState(string path)
+            {
+                IsDirectory = Directory.Exists(path);
+                BasePath = path;
+                SessionId = Guid.NewGuid();
+                if (IsDirectory)
+                {
+                    DirectoryRoot = BuildDirectoryTree(path);
+                    FlattenFiles(DirectoryRoot, FileItems);
+                }
+                else
+                {
+                    var fileInfo = new FileInfo(path);
+                    FileName = fileInfo.Name;
+                    FileSize = fileInfo.Length;
+                }
+            }
+
+            private DirectoryNode BuildDirectoryTree(string path)
+            {
+                var node = new DirectoryNode
+                {
+                    Name = Path.GetFileName(path)
+                };
+
+                foreach (var dir in Directory.GetDirectories(path))
+                {
+                    node.Children.Add(BuildDirectoryTree(dir));
+                }
+
+                foreach (var file in Directory.GetFiles(path))
+                {
+                    node.Files.Add(new FileItem
+                    {
+                        Name = Path.GetFileName(file),
+                        Size = new FileInfo(file).Length,
+                        LocalPath = file
+                    });
+                }
+
+                return node;
+            }
+
+            private void FlattenFiles(DirectoryNode node, List<FileItem> fileList)
+            {
+                fileList.AddRange(node.Files);
+                foreach (var child in node.Children)
+                {
+                    FlattenFiles(child, fileList);
+                }
+            }
+
+            public void Dispose()
+            {
+                FileStream?.Dispose();
+                Status = TransferStatus.Completed;
+            }
         }
 
-        private void InitializeDirectoryItems(string rootPath)
+        public enum TransferStatus
         {
-            // 递归处理
+            Pending,
+            Uploading,
+            Downloading,
+            Completed,
+            Interrupted
         }
-
-        private void InitializeFileItem(string path)
-        {
-            var fileInfo = new FileInfo(path);
-            FileName = fileInfo.Name;
-            RelativePath = "";
-            FileSize = fileInfo.Length;
-            BasePath = path;
-        }
-
-        public void MoveToNextFile() { }
-        public void Dispose() => Status = TransferStatus.Completed;
-    }
-
-    public enum TransferStatus
-    {
-        Pending,
-        Uploading,
-        Downloading,
-        Completed,
-        Interrupted
     }
 }

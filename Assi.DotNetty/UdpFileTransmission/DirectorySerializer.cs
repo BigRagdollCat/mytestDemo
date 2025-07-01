@@ -3,35 +3,98 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace Assi.DotNetty.UdpFileTransmission
 {
-    public static class DirectorySerializer
-    {
-        public static byte[] SerializeDirectoryStructure(string path)
-        {
-            var structure = new List<string>();
-            AddDirectoryContents(structure, path, path);
-            return Encoding.UTF8.GetBytes(string.Join("\n", structure));
-        }
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Text;
+    using System.Text.Json;
 
-        private static void AddDirectoryContents(List<string> structure, string basePath, string currentPath)
+    namespace Assi.DotNetty.UdpFileTransmission
+    {
+        public static class DirectorySerializer
         {
-            foreach (var file in Directory.GetFiles(currentPath))
+            // 构建目录树
+            public static DirectoryNode BuildDirectoryTree(string path)
             {
-                var relativePath = Path.GetRelativePath(basePath, file);
-                var fileInfo = new FileInfo(file);
-                structure.Add($"FILE|{relativePath}|{fileInfo.Length}");
+                var node = new DirectoryNode
+                {
+                    Name = Path.GetFileName(path)
+                };
+
+                foreach (var dir in Directory.GetDirectories(path))
+                {
+                    node.Children.Add(BuildDirectoryTree(dir));
+                }
+
+                foreach (var file in Directory.GetFiles(path))
+                {
+                    node.Files.Add(new FileItem
+                    {
+                        Name = Path.GetFileName(file),
+                        Size = new FileInfo(file).Length,
+                        LocalPath = file
+                    });
+                }
+
+                return node;
             }
 
-            foreach (var dir in Directory.GetDirectories(currentPath))
+            // 序列化目录结构并分片
+            public static List<byte[]> SerializeDirectoryStructure(DirectoryNode root, int maxChunkSize = RUDPProtocol.MaxPayloadSize)
             {
-                var relativePath = Path.GetRelativePath(basePath, dir);
-                structure.Add($"DIR|{relativePath}");
-                AddDirectoryContents(structure, basePath, dir);
+                // 平铺目录结构
+                var flatStructure = FlattenDirectory(root);
+                var json = JsonSerializer.Serialize(flatStructure);
+                var bytes = Encoding.UTF8.GetBytes(json);
+
+                // 分块
+                var chunks = new List<byte[]>();
+                for (int i = 0; i < bytes.Length; i += maxChunkSize)
+                {
+                    int chunkSize = Math.Min(maxChunkSize, bytes.Length - i);
+                    byte[] chunk = new byte[chunkSize];
+                    Array.Copy(bytes, i, chunk, 0, chunkSize);
+                    chunks.Add(chunk);
+                }
+
+                return chunks;
+            }
+
+            // 平铺目录结构
+            private static List<object> FlattenDirectory(DirectoryNode node)
+            {
+                var result = new List<object>();
+
+                // 添加当前节点信息
+                result.Add(new
+                {
+                    Type = "DIRECTORY",
+                    DirID = node.DirID,
+                    Name = node.Name
+                });
+
+                // 添加当前目录的文件
+                foreach (var file in node.Files)
+                {
+                    result.Add(new
+                    {
+                        Type = "FILE",
+                        DirID = node.DirID,
+                        Name = file.Name,
+                        Size = file.Size
+                    });
+                }
+
+                // 递归添加子目录
+                foreach (var child in node.Children)
+                {
+                    result.AddRange(FlattenDirectory(child));
+                }
+
+                return result;
             }
         }
     }
