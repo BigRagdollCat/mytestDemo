@@ -14,17 +14,18 @@ namespace Assi.Server.Services
     public class ClientMonitorService : BackgroundService
     {
         private readonly UDPFileServer _fileServer;
-        private readonly ILogger<ClientMonitorService> _logger;
+        //private readonly ILogger<ClientMonitorService> _logger;
 
-        public ClientMonitorService(UDPFileServer fileServer, ILogger<ClientMonitorService> logger)
+        public ClientMonitorService(UDPFileServer fileServer)
         {
             _fileServer = fileServer;
-            _logger = logger;
+            //, ILogger<ClientMonitorService> logger
+            //_logger = logger;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Client monitoring service started");
+            //_logger.LogInformation("Client monitoring service started");
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -36,11 +37,11 @@ namespace Assi.Server.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Monitor service error");
+                    //_logger.LogError(ex, "Monitor service error");
                 }
             }
 
-            _logger.LogInformation("Client monitoring service stopped");
+            //_logger.LogInformation("Client monitoring service stopped");
         }
 
         private void CheckClientStatus()
@@ -51,7 +52,7 @@ namespace Assi.Server.Services
 
             foreach (var client in offlineClients)
             {
-                _logger.LogWarning($"Client timeout: {client.ClientName}");
+                //_logger.LogWarning($"Client timeout: {client.ClientName}");
                 _fileServer.DisconnectClient(client);
             }
         }
@@ -66,9 +67,9 @@ namespace Assi.Server.Services
                     double percent = transfer.TotalSize > 0 ?
                         (double)transfer.Transferred / transfer.TotalSize * 100 : 0;
 
-                    _logger.LogInformation($"[{client.ClientName}] " +
-                        $"{transfer.FileName}: {percent:0.0}% " +
-                        $"({transfer.Transferred}/{transfer.TotalSize} bytes)");
+                    //_logger.LogInformation($"[{client.ClientName}] " +
+                    //$"{transfer.FileName}: {percent:0.0}% " +
+                    //({transfer.Transferred}/{transfer.TotalSize} bytes)");
                 }
             }
         }

@@ -22,13 +22,15 @@ namespace Assi.Server.Services
 
             // 设置事件处理
             _server.OnClientConnected += client =>
-                Logger.Info($"Client connected: {client.Name} ({client.IP})");
+            {
+
+            };
 
             _server.OnUploadCompleted += (client, file, size) =>
-                Logger.Info($"Upload completed: {client.Name} => {file} ({size} bytes)");
+            { };
 
             _server.OnDownloadCompleted += (client, file, size) =>
-                Logger.Info($"Download completed: {client.Name} <= {file} ({size} bytes)");
+            { };
 
             // 启动监控服务
             _monitor = new ClientMonitorService(_server);
