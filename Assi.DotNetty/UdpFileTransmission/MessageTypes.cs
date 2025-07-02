@@ -14,7 +14,10 @@
         DirectoryComplete,
         Error,
         ProgressRequest,
-        ProgressResponse
+        ProgressResponse,
+        BroadcastStart,
+        BroadcastChunk,
+        BroadcastEnd
     }
 
     public class FileMessageHeader
@@ -23,8 +26,8 @@
         public Guid SessionId { get; set; }
         public uint Sequence { get; set; }
         public uint AckSequence { get; set; }
-        public Guid DirID { get; set; } // 目录传输ID
-        public string FileName { get; set; } // 文件名
+        public Guid DirID { get; set; }
+        public string FileName { get; set; }
         public long FileSize { get; set; }
         public long Offset { get; set; }
         public int DataLength { get; set; }

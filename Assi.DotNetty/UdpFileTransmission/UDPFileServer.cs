@@ -6,8 +6,6 @@ using System.Text.Json;
 
 namespace Assi.DotNetty.UdpFileTransmission
 {
-
-
     public class UDPFileServer : IDisposable
     {
         private readonly UdpClient _udpClient;
@@ -16,6 +14,7 @@ namespace Assi.DotNetty.UdpFileTransmission
         private readonly string _storagePath;
         private readonly Thread _receiveThread;
         private readonly int _port;
+        private readonly Timer _retryTimer;
 
         public UDPFileServer(int port, string storagePath)
         {
@@ -27,6 +26,7 @@ namespace Assi.DotNetty.UdpFileTransmission
             _receiveThread = new Thread(ReceiveLoop);
             _receiveThread.IsBackground = true;
             _receiveThread.Start();
+            _retryTimer = new Timer(RetryPendingPackets, null, 100, 100);
         }
 
         private void ReceiveLoop()
@@ -113,13 +113,29 @@ namespace Assi.DotNetty.UdpFileTransmission
             session.IsDirectoryReady = false;
             session.PendingFiles.Clear();
             session.DirectoryPaths.Clear();
+            session.DirectoryChunks.Clear();
             SendAck(session, message.Header.Sequence);
         }
 
         private void HandleDirectoryChunk(ClientSession session, FileMessage message)
         {
-            // 解析目录块数据
-            var json = Encoding.UTF8.GetString(message.Data);
+            session.DirectoryChunks.Add(message.Data);
+            SendAck(session, message.Header.Sequence);
+        }
+
+        private void HandleDirectoryEnd(ClientSession session, FileMessage message)
+        {
+            int totalLength = session.DirectoryChunks.Sum(chunk => chunk.Length);
+            byte[] fullData = new byte[totalLength];
+            int offset = 0;
+            foreach (var chunk in session.DirectoryChunks)
+            {
+                Buffer.BlockCopy(chunk, 0, fullData, offset, chunk.Length);
+                offset += chunk.Length;
+            }
+            session.DirectoryChunks.Clear();
+
+            var json = Encoding.UTF8.GetString(fullData);
             var items = JsonSerializer.Deserialize<List<object>>(json);
 
             foreach (var item in items)
@@ -132,12 +148,9 @@ namespace Assi.DotNetty.UdpFileTransmission
                     var dirID = element.GetProperty("DirID").GetGuid();
                     var name = element.GetProperty("Name").GetString();
 
-                    // 创建目录
                     var dirPath = Path.Combine(session.StorageRoot, name);
                     Directory.CreateDirectory(dirPath);
                     session.DirectoryPaths[dirID] = dirPath;
-
-                    // 初始化待传输文件列表
                     session.PendingFiles[dirID] = new List<FileItem>();
                 }
                 else if (type == "FILE")
@@ -146,24 +159,20 @@ namespace Assi.DotNetty.UdpFileTransmission
                     var name = element.GetProperty("Name").GetString();
                     var size = element.GetProperty("Size").GetInt64();
 
-                    // 添加到待传输文件列表
-                    session.PendingFiles[dirID].Add(new FileItem
+                    if (session.PendingFiles.TryGetValue(dirID, out var fileList))
                     {
-                        Name = name,
-                        Size = size
-                    });
+                        fileList.Add(new FileItem
+                        {
+                            Name = name,
+                            Size = size
+                        });
+                    }
                 }
             }
 
-            SendAck(session, message.Header.Sequence);
-        }
-
-        private void HandleDirectoryEnd(ClientSession session, FileMessage message)
-        {
             session.IsDirectoryReady = true;
             SendAck(session, message.Header.Sequence);
 
-            // 通知客户端目录准备完成
             var completeMsg = new FileMessage
             {
                 Header = new FileMessageHeader
@@ -189,27 +198,55 @@ namespace Assi.DotNetty.UdpFileTransmission
                 return;
             }
 
-            // 创建文件
-            string filePath = Path.Combine(dirPath, message.Header.FileName);
-            session.ActiveFile = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+            string basePath = Path.Combine(dirPath, message.Header.FileName);
+            string filePath = GetUniqueFilePath(basePath);
+
+            var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+            string fileKey = $"{message.Header.DirID}_{message.Header.FileName}";
+
+            if (!session.ActiveFiles.TryAdd(fileKey, fileStream))
+            {
+                fileStream.Dispose();
+                SendError(session, "File already in transfer");
+                return;
+            }
+
             SendAck(session, message.Header.Sequence);
+        }
+
+        private string GetUniqueFilePath(string basePath)
+        {
+            string directory = Path.GetDirectoryName(basePath);
+            string fileName = Path.GetFileNameWithoutExtension(basePath);
+            string extension = Path.GetExtension(basePath);
+            string newPath = basePath;
+            int count = 1;
+
+            while (File.Exists(newPath))
+            {
+                newPath = Path.Combine(directory, $"{fileName}_{count}{extension}");
+                count++;
+            }
+            return newPath;
         }
 
         private void HandleFileChunk(ClientSession session, FileMessage message)
         {
-            if (session.ActiveFile == null)
+            string fileKey = $"{message.Header.DirID}_{message.Header.FileName}";
+
+            if (!session.ActiveFiles.TryGetValue(fileKey, out var fileStream))
             {
                 SendError(session, "No active file for chunk");
                 return;
             }
 
-            session.ActiveFile.Write(message.Data, 0, message.Header.DataLength);
+            fileStream.Write(message.Data, 0, message.Header.DataLength);
+
             if (message.Header.IsLastChunk)
             {
-                session.ActiveFile.Dispose();
-                session.ActiveFile = null;
+                fileStream.Dispose();
+                session.ActiveFiles.TryRemove(fileKey, out _);
 
-                // 标记文件完成
                 if (session.PendingFiles.TryGetValue(message.Header.DirID, out var files))
                 {
                     var file = files.FirstOrDefault(f => f.Name == message.Header.FileName);
@@ -227,7 +264,7 @@ namespace Assi.DotNetty.UdpFileTransmission
 
         private void HandleDirectoryComplete(ClientSession session, FileMessage message)
         {
-            // 客户端确认目录完成，服务端不需要额外处理
+            // 不需要额外处理
         }
 
         private void SendAck(ClientSession session, uint sequence)
@@ -266,9 +303,86 @@ namespace Assi.DotNetty.UdpFileTransmission
             _udpClient.Send(packet, packet.Length, session.RemoteEndpoint);
         }
 
+        private void RetryPendingPackets(object state)
+        {
+            foreach (var session in _sessions.Values)
+            {
+                foreach (var kvp in session.PendingAcks)
+                {
+                    _udpClient.Send(kvp.Value, kvp.Value.Length, session.RemoteEndpoint);
+                }
+            }
+        }
+
+        public void BroadcastFile(string filePath)
+        {
+            if (!File.Exists(filePath))
+                return;
+
+            byte[] fileData = File.ReadAllBytes(filePath);
+            string fileName = Path.GetFileName(filePath);
+            int maxChunkSize = RUDPProtocol.CalculateMaxPayload(new FileMessageHeader { FileName = fileName });
+            if (maxChunkSize <= 0) maxChunkSize = 1024;
+
+            int totalChunks = (int)Math.Ceiling((double)fileData.Length / maxChunkSize);
+
+            foreach (var session in _sessions.Values)
+            {
+                var startMsg = new FileMessage
+                {
+                    Header = new FileMessageHeader
+                    {
+                        Type = MessageType.BroadcastStart,
+                        SessionId = session.SessionId,
+                        FileName = fileName,
+                        FileSize = fileData.Length
+                    }
+                };
+                SendMessage(session, startMsg);
+
+                for (int i = 0; i < totalChunks; i++)
+                {
+                    int chunkOffset = i * maxChunkSize;
+                    int chunkSize = Math.Min(maxChunkSize, fileData.Length - chunkOffset);
+                    bool isLast = (chunkOffset + chunkSize) >= fileData.Length;
+
+                    var chunk = new byte[chunkSize];
+                    Array.Copy(fileData, chunkOffset, chunk, 0, chunkSize);
+
+                    var chunkMsg = new FileMessage
+                    {
+                        Header = new FileMessageHeader
+                        {
+                            Type = MessageType.BroadcastChunk,
+                            SessionId = session.SessionId,
+                            Sequence = (uint)i,
+                            FileName = fileName,
+                            Offset = chunkOffset,
+                            DataLength = chunkSize,
+                            IsLastChunk = isLast
+                        },
+                        Data = chunk
+                    };
+                    SendMessage(session, chunkMsg);
+                }
+
+                var endMsg = new FileMessage
+                {
+                    Header = new FileMessageHeader
+                    {
+                        Type = MessageType.BroadcastEnd,
+                        SessionId = session.SessionId,
+                        FileName = fileName
+                    }
+                };
+                SendMessage(session, endMsg);
+            }
+        }
+
         public void Dispose()
         {
             _cts.Cancel();
+            _retryTimer?.Dispose();
             _udpClient.Close();
         }
     }

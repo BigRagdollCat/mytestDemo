@@ -2,8 +2,10 @@
 using System.Net;
 using System.Net.Sockets;
 
+
 namespace Assi.DotNetty.UdpFileTransmission
 {
+
     public class UDPFileClient : IDisposable
     {
         private readonly UdpClient _udpClient;
@@ -14,6 +16,7 @@ namespace Assi.DotNetty.UdpFileTransmission
         private Guid _currentSessionId;
         private ClientTransferState _currentTransfer;
         private readonly ManualResetEventSlim _directoryReadyEvent = new ManualResetEventSlim(false);
+        private readonly ConcurrentDictionary<string, FileStream> _broadcastFiles = new ConcurrentDictionary<string, FileStream>();
 
         public UDPFileClient(string serverIp, int serverPort)
         {
@@ -52,29 +55,21 @@ namespace Assi.DotNetty.UdpFileTransmission
 
         private async Task UploadDirectory()
         {
-            // 重置目录准备事件
             _directoryReadyEvent.Reset();
-
-            // 发送目录开始消息
             await SendDirectoryStart();
 
-            // 序列化目录结构并分片
             var chunks = DirectorySerializer.SerializeDirectoryStructure(_currentTransfer.DirectoryRoot);
 
-            // 发送目录块
             foreach (var chunk in chunks)
             {
                 await SendDirectoryChunk(chunk);
             }
 
-            // 发送目录结束消息
             await SendDirectoryEnd();
 
-            // 等待服务端确认目录准备完成
             if (!await WaitForDirectoryReady())
                 throw new Exception("Directory structure not ready on server");
 
-            // 传输文件
             foreach (var file in _currentTransfer.FileItems)
             {
                 await UploadFile(file);
@@ -83,14 +78,12 @@ namespace Assi.DotNetty.UdpFileTransmission
 
         private async Task<bool> WaitForDirectoryReady()
         {
-            // 等待目录准备事件或超时
             return await Task.Run(() => _directoryReadyEvent.Wait(TimeSpan.FromSeconds(30)));
         }
 
         private async Task UploadFile(ClientTransferState transfer)
         {
-            // 对于单个文件传输
-            Guid dirID = Guid.Empty; // 单个文件没有目录ID
+            Guid dirID = transfer.DirectoryRoot?.DirID ?? Guid.Empty;
 
             var fileStart = new FileMessage
             {
@@ -107,13 +100,16 @@ namespace Assi.DotNetty.UdpFileTransmission
             await SendWithRetry(fileStart);
 
             using var fs = new FileStream(transfer.BasePath, FileMode.Open, FileAccess.Read);
-            var buffer = new byte[RUDPProtocol.MaxPayloadSize];
+            var buffer = new byte[RUDPProtocol.MaxPacketSize - 200];
             int bytesRead;
             long offset = 0;
 
             while ((bytesRead = await fs.ReadAsync(buffer, 0, buffer.Length)) > 0)
             {
                 var isLast = offset + bytesRead >= transfer.FileSize;
+                var chunkData = new byte[bytesRead];
+                Array.Copy(buffer, 0, chunkData, 0, bytesRead);
+
                 var chunk = new FileMessage
                 {
                     Header = new FileMessageHeader
@@ -127,9 +123,8 @@ namespace Assi.DotNetty.UdpFileTransmission
                         DataLength = bytesRead,
                         IsLastChunk = isLast
                     },
-                    Data = new byte[bytesRead]
+                    Data = chunkData
                 };
-                Array.Copy(buffer, 0, chunk.Data, 0, bytesRead);
                 offset += bytesRead;
                 await SendWithRetry(chunk);
             }
@@ -137,16 +132,6 @@ namespace Assi.DotNetty.UdpFileTransmission
 
         private async Task UploadFile(FileItem file)
         {
-            // 获取文件所属的目录ID
-            // 注意：在目录元数据中，每个文件应该已经关联了目录ID
-            // 这里我们需要从目录树中找到文件的目录ID
-            Guid dirID = FindDirectoryIdForFile(file);
-            if (dirID == Guid.Empty)
-            {
-                throw new Exception($"Directory ID not found for file: {file.Name}");
-            }
-
-            // 发送文件开始
             var fileStart = new FileMessage
             {
                 Header = new FileMessageHeader
@@ -154,22 +139,36 @@ namespace Assi.DotNetty.UdpFileTransmission
                     Type = MessageType.FileStart,
                     SessionId = _currentSessionId,
                     Sequence = GetNextSequence(),
-                    DirID = dirID,
+                    DirID = file.DirID,
                     FileName = file.Name,
                     FileSize = file.Size
                 }
             };
             await SendWithRetry(fileStart);
 
-            // 发送文件内容
+            // 计算动态负载大小
+            int dynamicPayloadSize = RUDPProtocol.CalculateMaxPayload(
+                new FileMessageHeader
+                {
+                    FileName = file.Name,
+                    DirID = file.DirID
+                });
+
+            // 使用动态计算或保守值
+            int chunkSize = Math.Max(dynamicPayloadSize, 1024);
+
             using var fs = new FileStream(file.LocalPath, FileMode.Open, FileAccess.Read);
-            var buffer = new byte[RUDPProtocol.MaxPayloadSize];
+            var buffer = new byte[chunkSize];  // 使用正确的大小
+
             int bytesRead;
             long offset = 0;
 
             while ((bytesRead = await fs.ReadAsync(buffer, 0, buffer.Length)) > 0)
             {
                 var isLast = offset + bytesRead >= file.Size;
+                var chunkData = new byte[bytesRead];
+                Array.Copy(buffer, 0, chunkData, 0, bytesRead);
+
                 var chunk = new FileMessage
                 {
                     Header = new FileMessageHeader
@@ -177,48 +176,17 @@ namespace Assi.DotNetty.UdpFileTransmission
                         Type = MessageType.FileChunk,
                         SessionId = _currentSessionId,
                         Sequence = GetNextSequence(),
-                        DirID = dirID,
+                        DirID = file.DirID,
                         FileName = file.Name,
                         Offset = offset,
                         DataLength = bytesRead,
                         IsLastChunk = isLast
                     },
-                    Data = new byte[bytesRead]
+                    Data = chunkData
                 };
-                Array.Copy(buffer, 0, chunk.Data, 0, bytesRead);
                 offset += bytesRead;
                 await SendWithRetry(chunk);
             }
-        }
-
-        private Guid FindDirectoryIdForFile(FileItem file)
-        {
-            // 在目录树中搜索包含指定文件的目录
-            return FindDirectoryIdRecursive(_currentTransfer.DirectoryRoot, file);
-        }
-
-        private Guid FindDirectoryIdRecursive(DirectoryNode node, FileItem file)
-        {
-            // 检查当前目录是否包含该文件
-            foreach (var f in node.Files)
-            {
-                if (f.LocalPath == file.LocalPath && f.Name == file.Name)
-                {
-                    return node.DirID;
-                }
-            }
-
-            // 递归检查子目录
-            foreach (var child in node.Children)
-            {
-                var foundId = FindDirectoryIdRecursive(child, file);
-                if (foundId != Guid.Empty)
-                {
-                    return foundId;
-                }
-            }
-
-            return Guid.Empty;
         }
 
         private async Task SendSessionStart()
@@ -303,7 +271,7 @@ namespace Assi.DotNetty.UdpFileTransmission
                 var packet = RUDPProtocol.CreatePacket(message);
                 _udpClient.Send(packet, packet.Length, _serverEP);
                 await Task.Delay(200);
-                if (!_pendingPackets.ContainsKey(sequence)) return; // 已确认
+                if (!_pendingPackets.ContainsKey(sequence)) return;
             }
 
             throw new TimeoutException($"Packet {sequence} not acknowledged");
@@ -338,12 +306,19 @@ namespace Assi.DotNetty.UdpFileTransmission
                     }
                     else if (message.Header.Type == MessageType.DirectoryComplete)
                     {
-                        // 目录准备完成，可以开始文件传输
                         _directoryReadyEvent.Set();
                     }
-                    else if (message.Header.Type == MessageType.ProgressResponse)
+                    else if (message.Header.Type == MessageType.BroadcastStart)
                     {
-                        Console.WriteLine($"Transfer progress: {message.Header.Offset}/{message.Header.FileSize} bytes");
+                        HandleBroadcastStart(message);
+                    }
+                    else if (message.Header.Type == MessageType.BroadcastChunk)
+                    {
+                        HandleBroadcastChunk(message);
+                    }
+                    else if (message.Header.Type == MessageType.BroadcastEnd)
+                    {
+                        CompleteBroadcast(message);
                     }
                 }
             }
@@ -357,6 +332,34 @@ namespace Assi.DotNetty.UdpFileTransmission
             }
         }
 
+        private void HandleBroadcastStart(FileMessage message)
+        {
+            string fileName = message.Header.FileName;
+            string filePath = Path.Combine("Broadcasts", fileName);
+            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
+            var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+            _broadcastFiles[fileName] = fs;
+        }
+
+        private void HandleBroadcastChunk(FileMessage message)
+        {
+            if (_broadcastFiles.TryGetValue(message.Header.FileName, out var fs))
+            {
+                fs.Seek(message.Header.Offset, SeekOrigin.Begin);
+                fs.Write(message.Data, 0, message.Header.DataLength);
+            }
+        }
+
+        private void CompleteBroadcast(FileMessage message)
+        {
+            if (_broadcastFiles.TryRemove(message.Header.FileName, out var fs))
+            {
+                fs.Dispose();
+                Console.WriteLine($"Broadcast received: {message.Header.FileName}");
+            }
+        }
+
         private uint GetNextSequence() => _sequenceCounter++;
 
         public void Dispose()
@@ -364,6 +367,11 @@ namespace Assi.DotNetty.UdpFileTransmission
             _retryTimer?.Dispose();
             _udpClient?.Dispose();
             _directoryReadyEvent?.Dispose();
+            foreach (var fs in _broadcastFiles.Values)
+            {
+                fs.Dispose();
+            }
+            _broadcastFiles.Clear();
         }
     }
 }

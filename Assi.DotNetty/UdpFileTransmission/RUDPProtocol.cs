@@ -3,19 +3,27 @@ using System.Security.Cryptography;
 
 namespace Assi.DotNetty.UdpFileTransmission
 {
-
     public static class RUDPProtocol
     {
-        public const int HeaderSize = 128; // 实际头部大小可能变化
         public const int MaxPacketSize = 1400;
-        public const int MaxPayloadSize = MaxPacketSize - HeaderSize;
+
+        // 添加常量：保守的默认负载大小（用于目录序列化）
+        public const int ConservativePayloadSize = 1200;  // 1400 - 200(头部预估)
+
+        public static int CalculateMaxPayload(FileMessageHeader header)
+        {
+            int headerSize = 4 + 16 + 4 + 4 + 16 +
+                Encoding.UTF8.GetByteCount(header.FileName ?? "") +
+                8 + 8 + 4 + 1;
+
+            return MaxPacketSize - headerSize - 32;
+        }
 
         public static byte[] CreatePacket(FileMessage message)
         {
             using var ms = new MemoryStream();
             using var writer = new BinaryWriter(ms);
 
-            // 写入头部
             writer.Write((int)message.Header.Type);
             writer.Write(message.Header.SessionId.ToByteArray());
             writer.Write(message.Header.Sequence);
@@ -27,13 +35,11 @@ namespace Assi.DotNetty.UdpFileTransmission
             writer.Write(message.Header.DataLength);
             writer.Write(message.Header.IsLastChunk);
 
-            // 写入数据
             if (message.Data != null && message.Data.Length > 0)
             {
                 writer.Write(message.Data);
             }
 
-            // 计算并写入HMAC
             var data = ms.ToArray();
             var signature = ComputeHmac(data);
             writer.Write(signature);
@@ -43,13 +49,11 @@ namespace Assi.DotNetty.UdpFileTransmission
 
         public static FileMessage ParsePacket(byte[] packet)
         {
-            if (packet.Length < HeaderSize)
-                return null;
+            if (packet.Length < 32) return null;
 
             using var ms = new MemoryStream(packet);
             using var reader = new BinaryReader(ms);
 
-            // 读取头部
             var header = new FileMessageHeader
             {
                 Type = (MessageType)reader.ReadInt32(),
@@ -64,16 +68,14 @@ namespace Assi.DotNetty.UdpFileTransmission
                 IsLastChunk = reader.ReadBoolean()
             };
 
-            // 读取数据
             byte[] data = null;
             if (header.DataLength > 0)
             {
                 data = reader.ReadBytes(header.DataLength);
             }
 
-            // 验证HMAC
             var signature = reader.ReadBytes(32);
-            var computedSignature = ComputeHmac(packet, 0, packet.Length - 32);
+            var computedSignature = ComputeHmac(packet, 0, (int)ms.Position - 32);
             if (!SignaturesMatch(signature, computedSignature))
                 return null;
 

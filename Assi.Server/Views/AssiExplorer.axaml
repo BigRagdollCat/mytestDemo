@@ -3,43 +3,155 @@
         xmlns:vm="using:Assi.Server.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d"
+        d:DesignWidth="1200" d:DesignHeight="700"
         x:Class="Assi.Server.AssiExplorer"
         x:DataType="vm:AssiExplorerViewModel"
-        Title="AssiExplorer">
+        Title="AssiExplorer"
+        FontFamily="Segoe UI">
+
 	<Interaction.Behaviors>
 		<EventTriggerBehavior EventName="Loaded">
 			<InvokeCommandAction Command="{Binding LoadCommand}" CommandParameter="{Binding}"/>
 		</EventTriggerBehavior>
 	</Interaction.Behaviors>
+
 	<Grid>
+		<!-- 三列布局：侧边栏 + 主内容区 + 详情面板 -->
 		<Grid.ColumnDefinitions>
-			<ColumnDefinition Width="*"/>
-			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="Auto" MinWidth="200"/>
+			<ColumnDefinition Width="*" MinWidth="400"/>
+			<ColumnDefinition Width="Auto" MinWidth="300"/>
 		</Grid.ColumnDefinitions>
-		<Grid Grid.Column="0">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="4*"/>
-				<ColumnDefinition/>
-			</Grid.ColumnDefinitions>
-			<ListBox Grid.Column="1" ItemsSource="{Binding DisplayExplorerEntitys}">
+
+		<!-- 左侧导航树 -->
+		<Border Grid.Column="0" BorderBrush="#E0E0E0" BorderThickness="0 0 1 0">
+			<TreeView ItemsSource="{Binding Folders}" Margin="5">
+				<TreeView.ItemTemplate>
+					<TreeDataTemplate ItemsSource="{Binding SubFolders}">
+						<StackPanel Orientation="Horizontal" Spacing="8">
+							<Image Width="20" Height="20" Source="/Assets/Icons/folder.png"/>
+							<TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+						</StackPanel>
+					</TreeDataTemplate>
+				</TreeView.ItemTemplate>
+			</TreeView>
+		</Border>
+
+		<!-- 中间文件列表区 -->
+		<Grid Grid.Column="1">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="Auto"/>
+			</Grid.RowDefinitions>
+
+			<!-- 路径导航和搜索栏 -->
+			<Grid Grid.Row="0" Margin="10 5">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="*"/>
+					<ColumnDefinition Width="Auto"/>
+				</Grid.ColumnDefinitions>
+
+				<Button Content="←" Margin="0 0 5 0"/>
+				<Button Content="→" Grid.Column="0" Margin="25 0 5 0"/>
+				<Button Content="↑" Grid.Column="0" Margin="50 0 10 0"/>
+
+				<TextBox Grid.Column="1" Watermark="当前路径..."
+                         Text="{Binding CurrentPath}" VerticalContentAlignment="Center"/>
+
+				<Button Grid.Column="2" Content="搜索" Margin="10 0 0 0"/>
+			</Grid>
+
+			<!-- 文件列表 -->
+			<ListBox Grid.Row="1" ItemsSource="{Binding DisplayExplorerEntitys}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
 				<ListBox.ItemTemplate>
 					<DataTemplate>
-						<Grid ColumnDefinitions="10* 20* 30*" Background="Transparent">
+						<Grid ColumnDefinitions="30,*,150,100,80"
+                              Background="Transparent"
+                              Margin="2"
+                              Height="40">
 							<Interaction.Behaviors>
 								<EventTriggerBehavior EventName="DoubleTapped">
-									<InvokeCommandAction Command="{Binding ItemDoubleClickCommand}" CommandParameter="{Binding}"/>
+									<InvokeCommandAction Command="{Binding ItemDoubleClickCommand}"
+                                                         CommandParameter="{Binding}"/>
 								</EventTriggerBehavior>
 							</Interaction.Behaviors>
-							<CheckBox IsChecked="{Binding IsChecked}"></CheckBox>
-							<TextBlock Grid.Column="1" Text="{Binding Name}"></TextBlock>
-							<TextBlock Grid.Column="2"  Text="{Binding ChangeTime ,StringFormat={}{0:yyyy-MM-dd}}"></TextBlock>
+
+							<!-- 文件类型图标 -->
+							<Image Grid.Column="0" Width="24" Height="24" Stretch="Uniform"
+                                   Source="{Binding IconPath}"/>
+
+							<!-- 文件名 -->
+							<TextBlock Grid.Column="1" Text="{Binding Name}"
+                                       VerticalAlignment="Center" Margin="10 0"/>
+
+							<!-- 修改日期 -->
+							<TextBlock Grid.Column="2" Text="{Binding ChangeTime, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
+                                       VerticalAlignment="Center" Foreground="#666"/>
+
+							<!-- 文件类型 -->
+							<TextBlock Grid.Column="3" Text="{Binding Type}"
+                                       VerticalAlignment="Center" Foreground="#666"/>
+
+							<!-- 文件大小 -->
+							<TextBlock Grid.Column="4" Text="{Binding Size}"
+                                       VerticalAlignment="Center" HorizontalAlignment="Right"
+                                       Foreground="#666"/>
 						</Grid>
 					</DataTemplate>
 				</ListBox.ItemTemplate>
 			</ListBox>
+
+			<!-- 状态栏 -->
+			<Border Grid.Row="2" Background="#F0F0F0" Padding="10 5">
+				<TextBlock Text="{Binding StatusMessage}" Foreground="#555"/>
+			</Border>
 		</Grid>
 
+		<!-- 右侧详情面板 -->
+		<GridSplitter Grid.Column="1" Width="3" Background="#E0E0E0" HorizontalAlignment="Right"/>
+
+		<Border Grid.Column="2" BorderBrush="#E0E0E0" BorderThickness="1 0 0 0">
+			<ScrollViewer>
+				<StackPanel Margin="15" Spacing="10">
+					<TextBlock Text="详细信息" FontSize="16" FontWeight="Bold"/>
+
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="Auto"/>
+							<ColumnDefinition Width="*"/>
+						</Grid.ColumnDefinitions>
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+						</Grid.RowDefinitions>
+
+						<TextBlock Text="名称:" Grid.Row="0" Grid.Column="0" Foreground="#666"/>
+						<TextBlock Text="{Binding SelectedItem.Name}" Grid.Row="0" Grid.Column="1" Margin="10 0"/>
+
+						<TextBlock Text="路径:" Grid.Row="1" Grid.Column="0" Foreground="#666"/>
+						<TextBlock Text="{Binding SelectedItem.FullPath}" Grid.Row="1" Grid.Column="1" Margin="10 0"/>
+
+						<TextBlock Text="修改时间:" Grid.Row="2" Grid.Column="0" Foreground="#666"/>
+						<TextBlock Text="{Binding SelectedItem.ChangeTime, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
+                                   Grid.Row="2" Grid.Column="1" Margin="10 0"/>
+
+						<TextBlock Text="类型:" Grid.Row="3" Grid.Column="0" Foreground="#666"/>
+						<TextBlock Text="{Binding SelectedItem.Type}" Grid.Row="3" Grid.Column="1" Margin="10 0"/>
+
+						<TextBlock Text="大小:" Grid.Row="4" Grid.Column="0" Foreground="#666"/>
+						<TextBlock Text="{Binding SelectedItem.Size}" Grid.Row="4" Grid.Column="1" Margin="10 0"/>
+					</Grid>
+
+					<Button Content="属性" HorizontalAlignment="Stretch" Margin="0 20 0 0"/>
+				</StackPanel>
+			</ScrollViewer>
+		</Border>
 	</Grid>
 </Window>

@@ -15,21 +15,35 @@ using System.Windows.Input;
 
 namespace Assi.Server.ViewModels
 {
-    public class AssiExplorerViewModel: ViewModelBase
+    public partial class AssiExplorerViewModel: ViewModelBase
     {
         private StudentCard _student { get; set; }
         public AvaloniaList<ExplorerEntityInfo> DisplayExplorerEntitys { get; }
+        public AvaloniaList<ExplorerEntityInfo> Folders { get; }
 
         public AssiExplorerViewModel(StudentCard student) 
         {
             _student = student;
             DisplayExplorerEntitys = new AvaloniaList<ExplorerEntityInfo>();
+            Folders = new AvaloniaList<ExplorerEntityInfo>();
             LoadCommand = new RelayCommand(Load);
             GetFolderListCommand = new RelayCommand(GetFolderList);
             ItemDoubleClickCommand = new RelayCommand<ExplorerEntityInfo?>(OnItemDoubleClicked);
 
             DisplayExplorerEntitys.Add(new ExplorerEntityInfo(ItemDoubleClickCommand));
         }
+
+        [ObservableProperty]
+        private string _statusMessage;
+
+        [ObservableProperty]
+        private ExplorerEntityInfo _selectedItem;
+
+        [ObservableProperty]
+        private ExplorerEntityInfo _subFolders;
+
+        [ObservableProperty]
+        private string _currentPath;
 
         #region 双击事件
         public ICommand ItemDoubleClickCommand { get; }

@@ -15,7 +15,7 @@ namespace Assi.DotNetty.UdpFileTransmission
         public string BasePath { get; set; }
         public bool IsDirectory { get; set; }
         public string FileName { get; set; }
-        public Guid DirID { get; set; } // 当前文件所属的目录ID
+        public Guid DirID { get; set; }
         public long FileSize { get; set; }
         public long Transferred { get; set; }
         public TransferStatus Status { get; set; } = TransferStatus.Pending;
@@ -30,8 +30,9 @@ namespace Assi.DotNetty.UdpFileTransmission
             SessionId = Guid.NewGuid();
             if (IsDirectory)
             {
-                DirectoryRoot = BuildDirectoryTree(path);
+                DirectoryRoot = DirectorySerializer.BuildDirectoryTree(path);
                 FlattenFiles(DirectoryRoot, FileItems);
+                DirID = DirectoryRoot.DirID;
             }
             else
             {
@@ -39,31 +40,6 @@ namespace Assi.DotNetty.UdpFileTransmission
                 FileName = fileInfo.Name;
                 FileSize = fileInfo.Length;
             }
-        }
-
-        private DirectoryNode BuildDirectoryTree(string path)
-        {
-            var node = new DirectoryNode
-            {
-                Name = Path.GetFileName(path)
-            };
-
-            foreach (var dir in Directory.GetDirectories(path))
-            {
-                node.Children.Add(BuildDirectoryTree(dir));
-            }
-
-            foreach (var file in Directory.GetFiles(path))
-            {
-                node.Files.Add(new FileItem
-                {
-                    Name = Path.GetFileName(file),
-                    Size = new FileInfo(file).Length,
-                    LocalPath = file
-                });
-            }
-
-            return node;
         }
 
         private void FlattenFiles(DirectoryNode node, List<FileItem> fileList)
