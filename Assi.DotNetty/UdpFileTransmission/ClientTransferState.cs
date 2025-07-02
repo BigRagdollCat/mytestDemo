@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
+
 namespace Assi.DotNetty.UdpFileTransmission
 {
     public class ClientTransferState : IDisposable
@@ -56,14 +57,5 @@ namespace Assi.DotNetty.UdpFileTransmission
             FileStream?.Dispose();
             Status = TransferStatus.Completed;
         }
-    }
-
-    public enum TransferStatus
-    {
-        Pending,
-        Uploading,
-        Downloading,
-        Completed,
-        Interrupted
     }
 }

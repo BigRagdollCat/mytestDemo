@@ -1,20 +1,22 @@
 ﻿using System.Text;
 using System.Security.Cryptography;
 
+using System.Text;
+using System.Security.Cryptography;
+
 namespace Assi.DotNetty.UdpFileTransmission
 {
     public static class RUDPProtocol
     {
         public const int MaxPacketSize = 1400;
-
-        // 添加常量：保守的默认负载大小（用于目录序列化）
-        public const int ConservativePayloadSize = 1200;  // 1400 - 200(头部预估)
+        public const int ConservativePayloadSize = 1200;
 
         public static int CalculateMaxPayload(FileMessageHeader header)
         {
             int headerSize = 4 + 16 + 4 + 4 + 16 +
                 Encoding.UTF8.GetByteCount(header.FileName ?? "") +
-                8 + 8 + 4 + 1;
+                8 + 8 + 4 + 1 +
+                Encoding.UTF8.GetByteCount(header.ClientName ?? "");
 
             return MaxPacketSize - headerSize - 32;
         }
@@ -34,6 +36,7 @@ namespace Assi.DotNetty.UdpFileTransmission
             writer.Write(message.Header.Offset);
             writer.Write(message.Header.DataLength);
             writer.Write(message.Header.IsLastChunk);
+            writer.Write(message.Header.ClientName ?? string.Empty);
 
             if (message.Data != null && message.Data.Length > 0)
             {
@@ -65,7 +68,8 @@ namespace Assi.DotNetty.UdpFileTransmission
                 FileSize = reader.ReadInt64(),
                 Offset = reader.ReadInt64(),
                 DataLength = reader.ReadInt32(),
-                IsLastChunk = reader.ReadBoolean()
+                IsLastChunk = reader.ReadBoolean(),
+                ClientName = reader.ReadString()
             };
 
             byte[] data = null;

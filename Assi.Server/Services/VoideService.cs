@@ -15,7 +15,6 @@ using System.Threading.Tasks;
 
 namespace Assi.Server.Services
 {
-
     public class AssiVoideService
     {
         private readonly VideoBroadcastServer _videoBroadcastServer;

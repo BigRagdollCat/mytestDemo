@@ -7,6 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using System.Text;
+using System.Text.Json;
+
 namespace Assi.DotNetty.UdpFileTransmission
 {
     public static class DirectorySerializer
@@ -37,7 +40,9 @@ namespace Assi.DotNetty.UdpFileTransmission
             return node;
         }
 
-        public static List<byte[]> SerializeDirectoryStructure(DirectoryNode root, int maxChunkSize = RUDPProtocol.ConservativePayloadSize)
+        public static List<byte[]> SerializeDirectoryStructure(
+            DirectoryNode root,
+            int maxChunkSize = RUDPProtocol.ConservativePayloadSize)
         {
             var flatStructure = FlattenDirectory(root);
             var json = JsonSerializer.Serialize(flatStructure);

@@ -1,5 +1,6 @@
 ﻿
 using Assi.DotNetty.FileTransmission;
+using Assi.DotNetty.UdpFileTransmission;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,20 +12,27 @@ namespace Assi.Services
     public class FileServer
     {
         public bool IsRun { get; set; } = false;
-        EnhancedFileServer server { get; set; }
+        UDPFileServer server { get; set; }
         public FileServer(string fileDirectory)
         {
-            server = new EnhancedFileServer(9090, fileDirectory);
+            server = new UDPFileServer(9090, fileDirectory);
         }
 
-        public void Start() 
+        public void Start()
         {
-            server.StartAsync();
+            // 启动服务器
+            server.Start();
         }
 
-        public async Task Stop() 
+        public void BroadcastFile(string filePaht) 
         {
-            await server.StopAsync();
+            server.BroadcastFile(filePaht);
+        }
+
+        public async Task Stop()
+        {
+            // 停止服务器
+            server.Stop();
         }
     }
 }

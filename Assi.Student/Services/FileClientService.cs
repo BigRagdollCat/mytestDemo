@@ -1,5 +1,6 @@
 ﻿using Assi.DotNetty.ChatTransmission;
 using Assi.DotNetty.FileTransmission;
+using Assi.DotNetty.UdpFileTransmission;
 using Assi.Services;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
@@ -16,20 +17,21 @@ namespace Assi.Student.Services
 {
     public class FileClientService
     {
-        EnhancedFileClient client { get; set; }
+        UDPFileClient client { get; set; }
         public bool IsRun { get; set; } = false;
 
         public FileClientService(string Ip)
         {
-            client = new EnhancedFileClient(Ip, 9090);
+            client = new UDPFileClient(Ip, 9090);
         }
 
 
         public async Task Start(string fileName)
         {
-            IsRun = true;
-            await client.ConnectAndDownloadFile(fileName, startOffset: 0); // 从头下载
+            //IsRun = true;
+            //await client.(fileName, startOffset: 0); // 从头下载
             //await client.StartDownload();
+            await client.StartAsync("Test1");
         }
 
 
@@ -49,13 +51,13 @@ namespace Assi.Student.Services
             {
                 string fullPath = resultFile[0].Path.LocalPath;
                 IsRun = true;
-                await client.ConnectAndUploadFile(fullPath);
+                await client.UploadAsync(fullPath);
             }
         }
 
-        public async Task Stop() 
+        public void Stop() 
         {
-            await client.CloseAsync();
+            client.Stop();
         }
     }
 }

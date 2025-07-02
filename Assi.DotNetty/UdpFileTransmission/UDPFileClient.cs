@@ -2,37 +2,97 @@
 using System.Net;
 using System.Net.Sockets;
 
-
 namespace Assi.DotNetty.UdpFileTransmission
 {
-
     public class UDPFileClient : IDisposable
     {
         private readonly UdpClient _udpClient;
         private readonly IPEndPoint _serverEP;
-        private readonly ConcurrentDictionary<uint, FileMessage> _pendingPackets = new ConcurrentDictionary<uint, FileMessage>();
+        private readonly ConcurrentDictionary<uint, FileMessage> _pendingPackets = new();
+        private readonly ManualResetEventSlim _directoryReadyEvent = new(false);
+        private readonly ConcurrentDictionary<string, FileStream> _broadcastFiles = new();
         private readonly Timer _retryTimer;
+        private Timer _heartbeatTimer;
+
         private uint _sequenceCounter = 1;
         private Guid _currentSessionId;
         private ClientTransferState _currentTransfer;
-        private readonly ManualResetEventSlim _directoryReadyEvent = new ManualResetEventSlim(false);
-        private readonly ConcurrentDictionary<string, FileStream> _broadcastFiles = new ConcurrentDictionary<string, FileStream>();
+        private string _clientName;
+        private bool _isRunning;
+        private Thread _receiveThread;
+        private CancellationTokenSource _receiveCts;
+        private FileStream _currentDownload;
+
+        // 事件
+        public event Action OnConnected;
+        public event Action<string> OnDisconnected;
+        public event Action<string> OnFileReceived;
+        public event Action<string, string> OnTransferFailed;
 
         public UDPFileClient(string serverIp, int serverPort)
         {
-            _udpClient = new UdpClient();
             _serverEP = new IPEndPoint(IPAddress.Parse(serverIp), serverPort);
-            _retryTimer = new Timer(RetryPendingPackets, null, 100, 100);
-            Task.Run(ReceiveLoop);
+            _udpClient = new UdpClient();
+            _retryTimer = new Timer(RetryPendingPackets, null, Timeout.Infinite, Timeout.Infinite);
+            _receiveCts = new CancellationTokenSource();
+        }
+
+        public async Task StartAsync(string clientName)
+        {
+            if (_isRunning) return;
+
+            _isRunning = true;
+            _clientName = clientName;
+            _currentSessionId = Guid.NewGuid();
+
+            // 发送注册消息
+            await SendRegisterMessage();
+
+            // 启动接收线程
+            _receiveThread = new Thread(ReceiveLoop);
+            _receiveThread.IsBackground = true;
+            _receiveThread.Start();
+
+            // 启动定时器
+            _retryTimer.Change(100, 100);
+            _heartbeatTimer = new Timer(SendHeartbeat, null, 30000, 30000);
+
+            Console.WriteLine("Client started");
+        }
+
+        public void Stop()
+        {
+            if (!_isRunning) return;
+
+            _isRunning = false;
+            _receiveCts.Cancel();
+            _udpClient.Close();
+
+            // 停止定时器
+            _retryTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+            _heartbeatTimer?.Dispose();
+
+            // 清理资源
+            foreach (var fs in _broadcastFiles.Values)
+            {
+                fs.Dispose();
+            }
+            _broadcastFiles.Clear();
+
+            _currentDownload?.Dispose();
+            _currentDownload = null;
+
+            Console.WriteLine("Client stopped");
         }
 
         public async Task UploadAsync(string path)
         {
+            if (!_isRunning)
+                throw new InvalidOperationException("Client must be started before uploading");
+
             try
             {
                 _currentTransfer = new ClientTransferState(path);
-                _currentSessionId = _currentTransfer.SessionId;
-
                 await SendSessionStart();
 
                 if (_currentTransfer.IsDirectory)
@@ -48,7 +108,7 @@ namespace Assi.DotNetty.UdpFileTransmission
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Upload failed: {ex.Message}");
+                OnTransferFailed?.Invoke(path, ex.Message);
                 throw;
             }
         }
@@ -94,7 +154,8 @@ namespace Assi.DotNetty.UdpFileTransmission
                     Sequence = GetNextSequence(),
                     DirID = dirID,
                     FileName = transfer.FileName,
-                    FileSize = transfer.FileSize
+                    FileSize = transfer.FileSize,
+                    ClientName = _clientName
                 }
             };
             await SendWithRetry(fileStart);
@@ -121,7 +182,8 @@ namespace Assi.DotNetty.UdpFileTransmission
                         FileName = transfer.FileName,
                         Offset = offset,
                         DataLength = bytesRead,
-                        IsLastChunk = isLast
+                        IsLastChunk = isLast,
+                        ClientName = _clientName
                     },
                     Data = chunkData
                 };
@@ -141,25 +203,14 @@ namespace Assi.DotNetty.UdpFileTransmission
                     Sequence = GetNextSequence(),
                     DirID = file.DirID,
                     FileName = file.Name,
-                    FileSize = file.Size
+                    FileSize = file.Size,
+                    ClientName = _clientName
                 }
             };
             await SendWithRetry(fileStart);
 
-            // 计算动态负载大小
-            int dynamicPayloadSize = RUDPProtocol.CalculateMaxPayload(
-                new FileMessageHeader
-                {
-                    FileName = file.Name,
-                    DirID = file.DirID
-                });
-
-            // 使用动态计算或保守值
-            int chunkSize = Math.Max(dynamicPayloadSize, 1024);
-
             using var fs = new FileStream(file.LocalPath, FileMode.Open, FileAccess.Read);
-            var buffer = new byte[chunkSize];  // 使用正确的大小
-
+            var buffer = new byte[RUDPProtocol.MaxPacketSize - 200];
             int bytesRead;
             long offset = 0;
 
@@ -180,12 +231,49 @@ namespace Assi.DotNetty.UdpFileTransmission
                         FileName = file.Name,
                         Offset = offset,
                         DataLength = bytesRead,
-                        IsLastChunk = isLast
+                        IsLastChunk = isLast,
+                        ClientName = _clientName
                     },
                     Data = chunkData
                 };
                 offset += bytesRead;
                 await SendWithRetry(chunk);
+            }
+        }
+
+        private async Task SendRegisterMessage()
+        {
+            var registerMsg = new FileMessage
+            {
+                Header = new FileMessageHeader
+                {
+                    Type = MessageType.ClientRegister,
+                    SessionId = _currentSessionId,
+                    ClientName = _clientName
+                }
+            };
+            await SendWithRetry(registerMsg);
+        }
+
+        private void SendHeartbeat(object state)
+        {
+            try
+            {
+                var heartbeat = new FileMessage
+                {
+                    Header = new FileMessageHeader
+                    {
+                        Type = MessageType.Heartbeat,
+                        SessionId = _currentSessionId,
+                        ClientName = _clientName
+                    }
+                };
+                var packet = RUDPProtocol.CreatePacket(heartbeat);
+                _udpClient.Send(packet, packet.Length, _serverEP);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Heartbeat failed: {ex.Message}");
             }
         }
 
@@ -197,7 +285,8 @@ namespace Assi.DotNetty.UdpFileTransmission
                 {
                     Type = MessageType.SessionStart,
                     SessionId = _currentSessionId,
-                    Sequence = GetNextSequence()
+                    Sequence = GetNextSequence(),
+                    ClientName = _clientName
                 }
             };
             await SendWithRetry(sessionStart);
@@ -211,7 +300,8 @@ namespace Assi.DotNetty.UdpFileTransmission
                 {
                     Type = MessageType.SessionEnd,
                     SessionId = _currentSessionId,
-                    Sequence = GetNextSequence()
+                    Sequence = GetNextSequence(),
+                    ClientName = _clientName
                 }
             };
             await SendWithRetry(sessionEnd);
@@ -225,7 +315,8 @@ namespace Assi.DotNetty.UdpFileTransmission
                 {
                     Type = MessageType.DirectoryStart,
                     SessionId = _currentSessionId,
-                    Sequence = GetNextSequence()
+                    Sequence = GetNextSequence(),
+                    ClientName = _clientName
                 }
             };
             await SendWithRetry(dirStart);
@@ -240,7 +331,8 @@ namespace Assi.DotNetty.UdpFileTransmission
                     Type = MessageType.DirectoryChunk,
                     SessionId = _currentSessionId,
                     Sequence = GetNextSequence(),
-                    DataLength = chunkData.Length
+                    DataLength = chunkData.Length,
+                    ClientName = _clientName
                 },
                 Data = chunkData
             };
@@ -255,7 +347,8 @@ namespace Assi.DotNetty.UdpFileTransmission
                 {
                     Type = MessageType.DirectoryEnd,
                     SessionId = _currentSessionId,
-                    Sequence = GetNextSequence()
+                    Sequence = GetNextSequence(),
+                    ClientName = _clientName
                 }
             };
             await SendWithRetry(dirEnd);
@@ -271,7 +364,7 @@ namespace Assi.DotNetty.UdpFileTransmission
                 var packet = RUDPProtocol.CreatePacket(message);
                 _udpClient.Send(packet, packet.Length, _serverEP);
                 await Task.Delay(200);
-                if (!_pendingPackets.ContainsKey(sequence)) return;
+                if (!_pendingPackets.ContainsKey(sequence)) return; // 已确认
             }
 
             throw new TimeoutException($"Packet {sequence} not acknowledged");
@@ -279,56 +372,98 @@ namespace Assi.DotNetty.UdpFileTransmission
 
         private void RetryPendingPackets(object state)
         {
+            if (!_isRunning) return;
+
             foreach (var kvp in _pendingPackets)
             {
-                var packet = RUDPProtocol.CreatePacket(kvp.Value);
-                _udpClient.Send(packet, packet.Length, _serverEP);
+                try
+                {
+                    var packet = RUDPProtocol.CreatePacket(kvp.Value);
+                    _udpClient.Send(packet, packet.Length, _serverEP);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Retry error: {ex.Message}");
+                }
             }
         }
 
-        private async Task ReceiveLoop()
+        private void ReceiveLoop()
         {
             try
             {
-                while (true)
+                Console.WriteLine("Client receive loop started");
+                while (_isRunning && !_receiveCts.IsCancellationRequested)
                 {
-                    var result = await _udpClient.ReceiveAsync();
-                    var message = RUDPProtocol.ParsePacket(result.Buffer);
-                    if (message == null) continue;
+                    try
+                    {
+                        var result = _udpClient.ReceiveAsync().GetAwaiter().GetResult();
+                        var message = RUDPProtocol.ParsePacket(result.Buffer);
+                        if (message == null) continue;
 
-                    if (message.Header.Type == MessageType.FileAck)
-                    {
-                        _pendingPackets.TryRemove(message.Header.AckSequence, out _);
+                        ProcessMessage(message);
                     }
-                    else if (message.Header.Type == MessageType.Error)
+                    catch (SocketException ex) when (ex.SocketErrorCode == SocketError.Interrupted)
                     {
-                        Console.WriteLine($"Server error: {message.Header.FileName}");
+                        break;
                     }
-                    else if (message.Header.Type == MessageType.DirectoryComplete)
+                    catch (ObjectDisposedException)
                     {
-                        _directoryReadyEvent.Set();
+                        break;
                     }
-                    else if (message.Header.Type == MessageType.BroadcastStart)
+                    catch (Exception ex)
                     {
-                        HandleBroadcastStart(message);
-                    }
-                    else if (message.Header.Type == MessageType.BroadcastChunk)
-                    {
-                        HandleBroadcastChunk(message);
-                    }
-                    else if (message.Header.Type == MessageType.BroadcastEnd)
-                    {
-                        CompleteBroadcast(message);
+                        if (_isRunning)
+                            Console.WriteLine($"Receive error: {ex}");
                     }
                 }
             }
-            catch (ObjectDisposedException)
+            finally
             {
-                // 正常关闭
+                Console.WriteLine("Client receive loop exited");
             }
-            catch (Exception ex)
+        }
+
+        private void ProcessMessage(FileMessage message)
+        {
+            switch (message.Header.Type)
             {
-                Console.WriteLine($"Receive loop error: {ex}");
+                case MessageType.FileAck:
+                    _pendingPackets.TryRemove(message.Header.AckSequence, out _);
+                    break;
+
+                case MessageType.Error:
+                    Console.WriteLine($"Server error: {message.Header.FileName}");
+                    OnTransferFailed?.Invoke("Server", message.Header.FileName);
+                    break;
+
+                case MessageType.DirectoryComplete:
+                    _directoryReadyEvent.Set();
+                    break;
+
+                case MessageType.BroadcastStart:
+                    HandleBroadcastStart(message);
+                    break;
+
+                case MessageType.BroadcastChunk:
+                    HandleBroadcastChunk(message);
+                    break;
+
+                case MessageType.BroadcastEnd:
+                    CompleteBroadcast(message);
+                    break;
+
+                case MessageType.FileStart:
+                    StartFileTransfer(message);
+                    break;
+
+                case MessageType.FileChunk:
+                    ProcessFileChunk(message);
+                    break;
+
+                case MessageType.FileEnd:
+                    CompleteFileTransfer(message);
+                    break;
             }
         }
 
@@ -356,22 +491,62 @@ namespace Assi.DotNetty.UdpFileTransmission
             if (_broadcastFiles.TryRemove(message.Header.FileName, out var fs))
             {
                 fs.Dispose();
+                OnFileReceived?.Invoke(message.Header.FileName);
                 Console.WriteLine($"Broadcast received: {message.Header.FileName}");
             }
+        }
+
+        private void StartFileTransfer(FileMessage message)
+        {
+            string savePath = Path.Combine("Downloads", message.Header.FileName);
+            _currentDownload = File.Create(savePath);
+            Console.WriteLine($"Receiving file: {message.Header.FileName}");
+        }
+
+        private void ProcessFileChunk(FileMessage message)
+        {
+            if (_currentDownload != null)
+            {
+                _currentDownload.Write(message.Data, 0, message.Header.DataLength);
+                SendAck(message.Header.Sequence);
+            }
+        }
+
+        private void CompleteFileTransfer(FileMessage message)
+        {
+            if (_currentDownload != null)
+            {
+                _currentDownload.Dispose();
+                _currentDownload = null;
+                OnFileReceived?.Invoke(message.Header.FileName);
+                Console.WriteLine($"File received: {message.Header.FileName}");
+            }
+        }
+
+        private void SendAck(uint sequence)
+        {
+            var ack = new FileMessage
+            {
+                Header = new FileMessageHeader
+                {
+                    Type = MessageType.FileAck,
+                    AckSequence = sequence,
+                    ClientName = _clientName
+                }
+            };
+            var packet = RUDPProtocol.CreatePacket(ack);
+            _udpClient.Send(packet, packet.Length, _serverEP);
         }
 
         private uint GetNextSequence() => _sequenceCounter++;
 
         public void Dispose()
         {
+            Stop();
             _retryTimer?.Dispose();
-            _udpClient?.Dispose();
+            _heartbeatTimer?.Dispose();
             _directoryReadyEvent?.Dispose();
-            foreach (var fs in _broadcastFiles.Values)
-            {
-                fs.Dispose();
-            }
-            _broadcastFiles.Clear();
+            _receiveCts?.Dispose();
         }
     }
 }

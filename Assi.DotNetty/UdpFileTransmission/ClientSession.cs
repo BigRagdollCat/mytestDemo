@@ -2,6 +2,7 @@
 using System.Net;
 
 
+
 namespace Assi.DotNetty.UdpFileTransmission
 {
     public class ClientSession
@@ -9,12 +10,10 @@ namespace Assi.DotNetty.UdpFileTransmission
         public Guid SessionId { get; set; }
         public IPEndPoint RemoteEndpoint { get; }
         public string StorageRoot { get; set; }
+        public string ClientName { get; set; }
 
-        public long TotalTransferred { get; set; }
-        public long TotalSize { get; set; }
-        public int FilesReceived { get; set; }
-        public string Status { get; set; } = "Connected";
         public DateTime LastActivity { get; set; } = DateTime.UtcNow;
+        public FileTransfer CurrentTransfer { get; set; }
 
         public ConcurrentDictionary<string, FileStream> ActiveFiles { get; } =
             new ConcurrentDictionary<string, FileStream>();
@@ -46,6 +45,11 @@ namespace Assi.DotNetty.UdpFileTransmission
                 file.Dispose();
             }
             ActiveFiles.Clear();
+        }
+
+        public bool IsAlive(TimeSpan timeout)
+        {
+            return (DateTime.UtcNow - LastActivity) < timeout;
         }
     }
 }

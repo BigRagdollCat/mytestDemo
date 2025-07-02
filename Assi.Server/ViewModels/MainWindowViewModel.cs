@@ -250,6 +250,7 @@ namespace Assi.Server.ViewModels
                         SendTimeSpan = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                         Body = fileName
                     }, 8089);
+                    fileServer.BroadcastFile(fullPath);
                 }
             }
             catch (Exception ex)
